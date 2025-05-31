@@ -1,7 +1,8 @@
 {
-  "name": "vite_react_shadcn_ts",
+  "name": "mcp-blog-platform",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "description": "MCP Blog Platform - A complete blog generation and management system",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -69,6 +70,7 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^8.2.0",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
@@ -79,5 +81,8 @@
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.4.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }

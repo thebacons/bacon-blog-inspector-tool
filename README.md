@@ -1,73 +1,59 @@
-# Welcome to your Lovable project
 
-## Project info
+# MCP Blog Platform
 
-**URL**: https://lovable.dev/projects/aeab427d-01ac-4380-b588-8f6a64d30918
+A full-stack blog generation and management system with AI-powered content creation.
 
-## How can I edit this code?
+## Project Structure
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/aeab427d-01ac-4380-b588-8f6a64d30918) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+mcp-blog-platform/
+├── client/           # React frontend application
+├── server/           # Node.js backend service
+└── docs/             # Project documentation
 ```
 
-**Edit a file directly in GitHub**
+## Prerequisites
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+- Node.js >= 16.0.0
+- npm >= 7.0.0
 
-**Use GitHub Codespaces**
+## Getting Started
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/mcp-blog-platform.git
+   cd mcp-blog-platform
+   ```
 
-## What technologies are used for this project?
+2. **Install dependencies**
+   ```bash
+   npm run install:all
+   ```
 
-This project is built with:
+3. **Set up environment variables**
+   - Copy `.env.example` to `.env` in both `client` and `server` directories
+   - Update the environment variables as needed
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+4. **Run the application**
+   ```bash
+   # Start both client and server
+   npm start
+   
+   # Or start them separately
+   npm run start:client
+   npm run start:server
+   ```
 
-## How can I deploy this project?
+## Development
 
-Simply open [Lovable](https://lovable.dev/projects/aeab427d-01ac-4380-b588-8f6a64d30918) and click on Share -> Publish.
+- **Client**: Runs on `http://localhost:5173`
+- **Server**: Runs on `http://localhost:4000`
 
-## Can I connect a custom domain to my Lovable project?
+## Deployment
 
-Yes, you can!
+See the deployment guide in the `docs/` directory.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## License
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+[Your License Here]
+>>>>>>> mcp-source/main
