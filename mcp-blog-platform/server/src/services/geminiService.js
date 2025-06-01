@@ -1,3 +1,4 @@
+
 // src/services/geminiService.js
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import dotenv from 'dotenv';
@@ -112,42 +113,115 @@ export async function generateEnhancedBlogPost(payload) {
 
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
     
-    // Build context for the AI
-    let contextPrompt = `Create an engaging, personal blog post based on the following information:\n\n`;
-    contextPrompt += `Main topic or thoughts: "${text}"\n\n`;
+    // Generate current date information
+    const now = new Date();
+    const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    const formattedDate = now.toLocaleDateString('en-US', dateOptions);
     
+    // Build comprehensive context for the AI
+    let contextPrompt = `Write a personal, engaging blog post for ${formattedDate}. Use the following information to create a natural, flowing narrative:
+
+PERSONAL NOTES/THOUGHTS:
+"${text}"
+
+`;
+
     // Add location context
     if (useSmartLocation && locationData?.name) {
-      contextPrompt += `Current location: ${locationData.name}\n`;
+      contextPrompt += `LOCATION: Currently in ${locationData.name}\n\n`;
     }
     
-    // Add weather context
+    // Add detailed weather context
     if (useWeatherData && weatherData?.temperature) {
       const temp = weatherData.temperature;
       const unit = weatherData.unit === 'Â°C' ? '°C' : (weatherData.unit || '°C');
       const conditions = weatherData.conditions || '';
-      contextPrompt += `Current weather: ${temp}${unit}, ${conditions}\n`;
+      
+      contextPrompt += `WEATHER INFORMATION:
+- Current temperature: ${temp}${unit}
+- Conditions: ${conditions}`;
+      
+      if (weatherData.feelsLike) {
+        contextPrompt += `
+- Feels like: ${weatherData.feelsLike}${unit}`;
+      }
+      
+      if (weatherData.humidity) {
+        contextPrompt += `
+- Humidity: ${weatherData.humidity}%`;
+      }
+      
+      if (weatherData.windSpeed) {
+        contextPrompt += `
+- Wind speed: ${weatherData.windSpeed} km/h`;
+      }
+      
+      // Add forecast information
+      if (weatherData.forecast && weatherData.forecast.length > 0) {
+        contextPrompt += `
+- Forecast: `;
+        weatherData.forecast.forEach((day, index) => {
+          if (index === 0) {
+            contextPrompt += `Today will be ${day.conditions} with a high of ${day.high}° and low of ${day.low}°. `;
+          } else {
+            contextPrompt += `${day.day} will be ${day.conditions} (${day.high}°/${day.low}°). `;
+          }
+        });
+      }
+      
+      contextPrompt += `\n\n`;
     }
     
-    // Add photo context
+    // Add photo context with details
     if (useTodaysPhotos && todaysPhotos?.length > 0) {
-      contextPrompt += `Today's photos: ${todaysPhotos.length} photos were taken\n`;
+      contextPrompt += `PHOTOS FROM TODAY (${todaysPhotos.length} photos taken):
+`;
+      todaysPhotos.forEach((photo, index) => {
+        contextPrompt += `Photo ${index + 1}:`;
+        if (photo.analysis?.description) {
+          contextPrompt += ` ${photo.analysis.description}`;
+        }
+        if (photo.analysis?.people && photo.analysis.people.length > 0) {
+          contextPrompt += ` (People: ${photo.analysis.people.join(', ')})`;
+        }
+        if (photo.location?.name || photo.analysis?.location?.locationName) {
+          const photoLocation = photo.location?.name || photo.analysis?.location?.locationName;
+          contextPrompt += ` (Location: ${photoLocation})`;
+        }
+        if (photo.analysis?.mood) {
+          contextPrompt += ` (Mood: ${photo.analysis.mood})`;
+        }
+        if (photo.analysis?.activity) {
+          contextPrompt += ` (Activity: ${photo.analysis.activity})`;
+        }
+        contextPrompt += `\n`;
+      });
+      contextPrompt += `\n`;
     }
     
     // Add news context
     if (useNewsData && newsData?.articles?.length > 0) {
-      contextPrompt += `Current news topics: ${newsData.articles.slice(0, 2).map(a => a.title).join(', ')}\n`;
+      contextPrompt += `CURRENT NEWS TOPICS:
+`;
+      newsData.articles.slice(0, 3).forEach((article, index) => {
+        contextPrompt += `- ${article.title}\n`;
+      });
+      contextPrompt += `\n`;
     }
     
-    contextPrompt += `\nPlease create a personal, engaging blog post that:
-    - Uses an appropriate HTML structure with h1, h2, and p tags
-    - Incorporates the contextual information naturally
-    - Feels personal and authentic
-    - Is well-structured with 3-4 sections
-    - Includes a compelling introduction and conclusion
-    - Maintains a conversational but polished tone
-    
-    Return only the HTML content without any markdown formatting.`;
+    contextPrompt += `INSTRUCTIONS:
+1. Create a natural, personal blog post that flows smoothly
+2. Use an engaging title that reflects the day and main activities (NOT just the date)
+3. Weave the weather, photos, and activities into a cohesive narrative
+4. Don't just list information - tell the story of the day
+5. Use proper HTML structure with h1 for title, h2 for sections, p for paragraphs
+6. Make it feel authentic and personal, like a real person's diary entry
+7. If photos show activities or people, incorporate those naturally into the story
+8. Use the weather information to set the mood and context
+9. Keep it engaging but not overly dramatic
+10. Write in first person as if you experienced this day
+
+Return only clean HTML content without markdown formatting or code blocks.`;
 
     const result = await model.generateContent(contextPrompt);
     const response = await result.response;
@@ -207,36 +281,59 @@ function generateDemoEnhancedBlogPost(payload) {
     todaysPhotos = selectedPhotos,
   } = payload;
 
-  // Build the demo blog post with context
-  const sections = [];
+  // Generate current date
+  const now = new Date();
+  const dateOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+  const formattedDate = now.toLocaleDateString('en-US', dateOptions);
+
+  // Build the demo blog post with more natural flow
+  let blogContent = `<h1>A Beautiful ${formattedDate}</h1>
   
-  sections.push(`<h1>Blog Post: ${text || 'My Day'}</h1>`);
-  
-  let intro = `<h2>Introduction</h2><p>As I sit down to write this blog${text ? ` about "${text}"` : ''}`;
-  
-  if (useSmartLocation && locationData?.name) {
-    intro += `, I'm writing from ${locationData.name}. `;
-  }
+  <h2>Morning Reflections</h2>
+  <p>As I sit down to write about today, I can't help but think about ${text}. `;
   
   if (useWeatherData && weatherData?.temperature) {
     const temp = weatherData.temperature;
     const unit = weatherData.unit === 'Â°C' ? '°C' : (weatherData.unit || '°C');
-    const conditions = weatherData.conditions || '';
-    intro += `The weather is currently ${temp}${unit} and ${conditions.toLowerCase()}. `;
+    const conditions = weatherData.conditions || 'pleasant';
+    blogContent += `The weather has been ${conditions.toLowerCase()} today, with temperatures around ${temp}${unit}. `;
   }
   
-  intro += 'This is a demonstration using demo data.</p>';
-  sections.push(intro);
+  if (useSmartLocation && locationData?.name) {
+    blogContent += `Here in ${locationData.name}, `;
+  }
   
-  sections.push(`
-    <h2>My Thoughts</h2>
-    <p>${text || 'Today has been an interesting day.'}</p>
+  blogContent += `it's been one of those days that reminds me why I love documenting these moments.</p>
+  
+  <h2>The Day Unfolded</h2>
+  <p>`;
+  
+  if (useTodaysPhotos && todaysPhotos?.length > 0) {
+    blogContent += `I captured ${todaysPhotos.length} photos today, each telling its own story. `;
     
-    <h2>Conclusion</h2>
-    <p>As I reflect on ${text ? 'this topic' : 'the day'}, I'm reminded of how technology continues to shape our experiences and perspectives in meaningful ways.</p>
-  `);
+    // Add some details about the photos
+    todaysPhotos.slice(0, 2).forEach((photo, index) => {
+      if (photo.analysis?.description) {
+        blogContent += `One particularly memorable shot shows ${photo.analysis.description.toLowerCase()}. `;
+      }
+    });
+  }
   
-  return sections.join('\n\n');
+  blogContent += `${text} This thought has been with me throughout the day, coloring my experiences and perspective.</p>
+  
+  <h2>Evening Thoughts</h2>
+  <p>As the day winds down, I'm grateful for these moments of reflection. `;
+  
+  if (useWeatherData && weatherData?.forecast) {
+    const tomorrow = weatherData.forecast.find(day => day.day === 'Tomorrow');
+    if (tomorrow) {
+      blogContent += `Looking ahead to tomorrow, the forecast shows ${tomorrow.conditions.toLowerCase()} weather with temperatures reaching ${tomorrow.high}°. `;
+    }
+  }
+  
+  blogContent += `Days like these remind me of the beauty in ordinary moments and the importance of capturing them.</p>`;
+
+  return blogContent;
 }
 
 export default {
