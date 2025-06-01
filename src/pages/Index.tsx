@@ -20,7 +20,6 @@ import PhotoPreview from "../components/PhotoPreview";
 import { generateBlogWithGemini } from "../services/blogService";
 import { getCurrentLocation } from "../services/locationService";
 import { getWeatherForLocation } from "../services/weatherService";
-
 interface WeatherData {
   location: string;
   temperature: number;
@@ -36,7 +35,6 @@ interface WeatherData {
     conditions: string;
   }>;
 }
-
 interface LocationData {
   name: string;
   latitude: number;
@@ -44,7 +42,6 @@ interface LocationData {
   country: string;
   timezone: string;
 }
-
 interface PhotoData {
   id: string;
   url: string;
@@ -69,9 +66,10 @@ interface PhotoData {
     activity: string;
   };
 }
-
 const Index = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [activeTab, setActiveTab] = useState("blog");
   const [blogTopic, setBlogTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -86,23 +84,20 @@ const Index = () => {
   const [selectedPhotos, setSelectedPhotos] = useState<PhotoData[]>([]);
   const [newsTopics, setNewsTopics] = useState("");
   const [showMCPSettings, setShowMCPSettings] = useState(false);
-
   const handleGenerateBlog = async () => {
     if (!blogTopic.trim()) {
       toast({
         title: "Topic Required",
         description: "Please enter a blog topic to generate content.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
-
     setIsGenerating(true);
     setGeneratedBlog("");
-
     try {
       console.log('Generating blog with Gemini 2.5 Flash...');
-      
+
       // Use the real Gemini service with all context data
       const blogContent = await generateBlogWithGemini({
         topic: blogTopic,
@@ -110,19 +105,17 @@ const Index = () => {
         weatherData: includeWeather ? weatherData : null,
         selectedPhotos: includePhotos ? selectedPhotos : []
       });
-      
       setGeneratedBlog(blogContent);
-      
       toast({
         title: "Blog Generated",
-        description: "Your enhanced blog post has been generated with Gemini 2.5 Flash!",
+        description: "Your enhanced blog post has been generated with Gemini 2.5 Flash!"
       });
     } catch (error) {
       console.error('Blog generation error:', error);
       toast({
         title: "Generation Failed",
         description: error instanceof Error ? error.message : "Failed to generate blog content. Please try again.",
-        variant: "destructive",
+        variant: "destructive"
       });
     } finally {
       setIsGenerating(false);
@@ -130,105 +123,110 @@ const Index = () => {
   };
 
   // Fetch real location data
-  const { data: location, isLoading: isLoadingLocation } = useQuery({
+  const {
+    data: location,
+    isLoading: isLoadingLocation
+  } = useQuery({
     queryKey: ["location"],
     queryFn: getCurrentLocation,
     enabled: includeLocation,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+    // 5 minutes
     retry: 1
   });
 
   // Fetch real weather data based on location
-  const { data: weather, isLoading: isLoadingWeather } = useQuery({
+  const {
+    data: weather,
+    isLoading: isLoadingWeather
+  } = useQuery({
     queryKey: ["weather", (location as LocationData)?.latitude, (location as LocationData)?.longitude],
     queryFn: () => {
       const locationData = location as LocationData;
       return locationData ? getWeatherForLocation(locationData.latitude, locationData.longitude) : null;
     },
     enabled: includeWeather && !!location,
-    staleTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 10 * 60 * 1000,
+    // 10 minutes
     retry: 1
   });
-
   const fetchPhotos = async (): Promise<PhotoData[]> => {
     // Mock photos data
-    return [
-      {
-        id: "1",
-        url: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b",
-        thumbnailUrl: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=100",
-        originalUrl: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b",
-        timestamp: "2023-05-15",
-        location: {
-          latitude: 37.7749,
-          longitude: -122.4194,
-          name: "Downtown"
-        },
-        metadata: {
-          camera: "Canon EOS R5",
-          people: ["John Doe", "Jane Smith"],
-          tags: ["city", "skyline", "sunset", "urban"]
-        },
-        aiAnalysis: {
-          description: "A beautiful city skyline at sunset",
-          objects: ["city", "skyline", "sunset", "urban"],
-          scene: "cityscape",
-          mood: "sunny",
-          activity: "sunset"
-        }
+    return [{
+      id: "1",
+      url: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b",
+      thumbnailUrl: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=100",
+      originalUrl: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b",
+      timestamp: "2023-05-15",
+      location: {
+        latitude: 37.7749,
+        longitude: -122.4194,
+        name: "Downtown"
       },
-      {
-        id: "2",
-        url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
-        thumbnailUrl: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=100",
-        originalUrl: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
-        timestamp: "2023-05-10",
-        location: {
-          latitude: 37.7749,
-          longitude: -122.4194,
-          name: "Mountain Range"
-        },
-        metadata: {
-          camera: "Nikon D850",
-          people: ["Tom Smith"],
-          tags: ["mountains", "nature", "landscape", "snow"]
-        },
-        aiAnalysis: {
-          description: "Mountain range with snow caps",
-          objects: ["mountains", "snow"],
-          scene: "mountain range",
-          mood: "sunny",
-          activity: "sunset"
-        }
+      metadata: {
+        camera: "Canon EOS R5",
+        people: ["John Doe", "Jane Smith"],
+        tags: ["city", "skyline", "sunset", "urban"]
       },
-      {
-        id: "3",
-        url: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1",
-        thumbnailUrl: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=100",
-        originalUrl: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1",
-        timestamp: "2023-05-05",
-        location: {
-          latitude: 37.7749,
-          longitude: -122.4194,
-          name: "Ocean Beach"
-        },
-        metadata: {
-          camera: "Sony Alpha A7R IV",
-          people: ["Alice Johnson"],
-          tags: ["beach", "sunset", "ocean", "waves"]
-        },
-        aiAnalysis: {
-          description: "Sunset view at the beach",
-          objects: ["beach", "waves"],
-          scene: "beach",
-          mood: "sunny",
-          activity: "sunset"
-        }
+      aiAnalysis: {
+        description: "A beautiful city skyline at sunset",
+        objects: ["city", "skyline", "sunset", "urban"],
+        scene: "cityscape",
+        mood: "sunny",
+        activity: "sunset"
       }
-    ];
+    }, {
+      id: "2",
+      url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
+      thumbnailUrl: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=100",
+      originalUrl: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
+      timestamp: "2023-05-10",
+      location: {
+        latitude: 37.7749,
+        longitude: -122.4194,
+        name: "Mountain Range"
+      },
+      metadata: {
+        camera: "Nikon D850",
+        people: ["Tom Smith"],
+        tags: ["mountains", "nature", "landscape", "snow"]
+      },
+      aiAnalysis: {
+        description: "Mountain range with snow caps",
+        objects: ["mountains", "snow"],
+        scene: "mountain range",
+        mood: "sunny",
+        activity: "sunset"
+      }
+    }, {
+      id: "3",
+      url: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1",
+      thumbnailUrl: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=100",
+      originalUrl: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1",
+      timestamp: "2023-05-05",
+      location: {
+        latitude: 37.7749,
+        longitude: -122.4194,
+        name: "Ocean Beach"
+      },
+      metadata: {
+        camera: "Sony Alpha A7R IV",
+        people: ["Alice Johnson"],
+        tags: ["beach", "sunset", "ocean", "waves"]
+      },
+      aiAnalysis: {
+        description: "Sunset view at the beach",
+        objects: ["beach", "waves"],
+        scene: "beach",
+        mood: "sunny",
+        activity: "sunset"
+      }
+    }];
   };
-
-  const { data: photos = [], isLoading: isLoadingPhotos } = useQuery({
+  const {
+    data: photos = [],
+    isLoading: isLoadingPhotos
+  } = useQuery({
     queryKey: ["photos"],
     queryFn: fetchPhotos,
     enabled: includePhotos
@@ -247,11 +245,9 @@ const Index = () => {
       setLocationData(location as LocationData);
     }
   }, [location]);
-
   const handlePhotoSelectionChange = (photos: PhotoData[]) => {
     setSelectedPhotos(photos);
   };
-
   const getWeatherIcon = (condition: string) => {
     const conditionLower = condition.toLowerCase();
     if (conditionLower.includes("sunny") || conditionLower.includes("clear")) return <Sun className="h-6 w-6 text-yellow-500" />;
@@ -263,9 +259,7 @@ const Index = () => {
     if (conditionLower.includes("cloud")) return <CloudSun className="h-6 w-6 text-gray-500" />;
     return <CloudOff className="h-6 w-6 text-gray-500" />;
   };
-
-  return (
-    <div className="min-h-screen bg-gray-50">
+  return <div className="min-h-screen bg-slate-300 rounded">
       <header className="bg-white shadow">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -274,11 +268,9 @@ const Index = () => {
               <p className="text-gray-600">Generate enhanced blog posts with Gemini 2.5 Flash</p>
             </div>
             <div className="flex items-center space-x-2">
-              {!import.meta.env.VITE_GOOGLE_API_KEY && (
-                <Badge variant="outline" className="text-orange-600 border-orange-200">
+              {!import.meta.env.VITE_GOOGLE_API_KEY && <Badge variant="outline" className="text-orange-600 border-orange-200">
                   Demo Mode
-                </Badge>
-              )}
+                </Badge>}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" size="sm">
@@ -299,8 +291,7 @@ const Index = () => {
       </header>
       
       <main className="container mx-auto px-4 py-8">
-        {!import.meta.env.VITE_GOOGLE_API_KEY && (
-          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        {!import.meta.env.VITE_GOOGLE_API_KEY && <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center space-x-2">
               <CloudSun className="h-5 w-5 text-blue-600" />
               <div>
@@ -312,19 +303,16 @@ const Index = () => {
                 </p>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
 
-        {showMCPSettings && (
-          <div className="mb-6">
+        {showMCPSettings && <div className="mb-6">
             <MCPServerManager />
             <div className="mt-4">
               <Button onClick={() => setShowMCPSettings(false)} variant="outline">
                 Close MCP Settings
               </Button>
             </div>
-          </div>
-        )}
+          </div>}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
@@ -345,108 +333,64 @@ const Index = () => {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="topic">Blog Topic</Label>
-                      <Textarea
-                        id="topic"
-                        placeholder="Enter your blog topic or idea here..."
-                        value={blogTopic}
-                        onChange={(e) => setBlogTopic(e.target.value)}
-                        className="min-h-[100px]"
-                      />
+                      <Textarea id="topic" placeholder="Enter your blog topic or idea here..." value={blogTopic} onChange={e => setBlogTopic(e.target.value)} className="min-h-[100px]" />
                     </div>
 
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label htmlFor="enhanced-blog">Use Enhanced Blog</Label>
-                        <Switch
-                          id="enhanced-blog"
-                          checked={useEnhancedBlog}
-                          onCheckedChange={setUseEnhancedBlog}
-                        />
+                        <Switch id="enhanced-blog" checked={useEnhancedBlog} onCheckedChange={setUseEnhancedBlog} />
                       </div>
                       <p className="text-sm text-gray-500">
                         Enhanced blogs include contextual information like weather, location, and photos
                       </p>
                     </div>
 
-                    {useEnhancedBlog && (
-                      <div className="space-y-4 p-4 bg-gray-50 rounded-md">
+                    {useEnhancedBlog && <div className="space-y-4 p-4 bg-gray-50 rounded-md">
                         <h3 className="font-medium">Enhancement Options</h3>
                         
                         <div className="grid grid-cols-2 gap-4">
                           <div className="flex items-center space-x-2">
-                            <Switch
-                              id="include-weather"
-                              checked={includeWeather}
-                              onCheckedChange={setIncludeWeather}
-                            />
+                            <Switch id="include-weather" checked={includeWeather} onCheckedChange={setIncludeWeather} />
                             <Label htmlFor="include-weather">Include Weather</Label>
                           </div>
                           
                           <div className="flex items-center space-x-2">
-                            <Switch
-                              id="include-location"
-                              checked={includeLocation}
-                              onCheckedChange={setIncludeLocation}
-                            />
+                            <Switch id="include-location" checked={includeLocation} onCheckedChange={setIncludeLocation} />
                             <Label htmlFor="include-location">Include Location</Label>
                           </div>
                           
                           <div className="flex items-center space-x-2">
-                            <Switch
-                              id="include-photos"
-                              checked={includePhotos}
-                              onCheckedChange={setIncludePhotos}
-                            />
+                            <Switch id="include-photos" checked={includePhotos} onCheckedChange={setIncludePhotos} />
                             <Label htmlFor="include-photos">Include Photos</Label>
                           </div>
                           
                           <div className="flex items-center space-x-2">
-                            <Switch
-                              id="include-news"
-                              checked={includeNews}
-                              onCheckedChange={setIncludeNews}
-                            />
+                            <Switch id="include-news" checked={includeNews} onCheckedChange={setIncludeNews} />
                             <Label htmlFor="include-news">Include News</Label>
                           </div>
                         </div>
 
-                        {includeNews && (
-                          <div className="space-y-2">
+                        {includeNews && <div className="space-y-2">
                             <Label htmlFor="news-topics">News Topics (comma separated)</Label>
-                            <Input
-                              id="news-topics"
-                              placeholder="technology, science, health"
-                              value={newsTopics}
-                              onChange={(e) => setNewsTopics(e.target.value)}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
+                            <Input id="news-topics" placeholder="technology, science, health" value={newsTopics} onChange={e => setNewsTopics(e.target.value)} />
+                          </div>}
+                      </div>}
                   </CardContent>
                   <CardFooter>
-                    <Button 
-                      onClick={handleGenerateBlog} 
-                      disabled={isGenerating || !blogTopic.trim()}
-                      className="w-full"
-                    >
-                      {isGenerating ? (
-                        <>
+                    <Button onClick={handleGenerateBlog} disabled={isGenerating || !blogTopic.trim()} className="w-full">
+                      {isGenerating ? <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Generating...
-                        </>
-                      ) : (
-                        <>
+                        </> : <>
                           <Send className="mr-2 h-4 w-4" />
                           Generate Blog
-                        </>
-                      )}
+                        </>}
                     </Button>
                   </CardFooter>
                 </Card>
 
-                {generatedBlog && (
-                  <Card>
+                {generatedBlog && <Card>
                     <CardHeader>
                       <CardTitle>Generated Blog Post</CardTitle>
                       <CardDescription>
@@ -454,27 +398,21 @@ const Index = () => {
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
-                      <div 
-                        className="prose max-w-none"
-                        dangerouslySetInnerHTML={{ __html: generatedBlog }}
-                      />
+                      <div className="prose max-w-none" dangerouslySetInnerHTML={{
+                    __html: generatedBlog
+                  }} />
                     </CardContent>
                     <CardFooter className="flex justify-between">
-                      <Button 
-                        variant="outline"
-                        onClick={() => navigator.clipboard.writeText(generatedBlog)}
-                      >
+                      <Button variant="outline" onClick={() => navigator.clipboard.writeText(generatedBlog)}>
                         Copy to Clipboard
                       </Button>
                       <Button variant="outline">Download as Markdown</Button>
                     </CardFooter>
-                  </Card>
-                )}
+                  </Card>}
               </div>
 
               <div className="space-y-6">
-                {useEnhancedBlog && includeWeather && (
-                  <Card>
+                {useEnhancedBlog && includeWeather && <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center">
                         <CloudSun className="mr-2 h-5 w-5" />
@@ -482,12 +420,9 @@ const Index = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {isLoadingWeather ? (
-                        <div className="flex justify-center py-4">
+                      {isLoadingWeather ? <div className="flex justify-center py-4">
                           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                        </div>
-                      ) : weatherData ? (
-                        <div className="space-y-4">
+                        </div> : weatherData ? <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm text-gray-500">{weatherData.location}</p>
@@ -520,8 +455,7 @@ const Index = () => {
                           <div className="space-y-2">
                             <h4 className="text-sm font-medium">Forecast</h4>
                             <div className="grid grid-cols-3 gap-2">
-                              {weatherData.forecast.map((day, i) => (
-                                <div key={i} className="text-center p-2 bg-gray-50 rounded">
+                              {weatherData.forecast.map((day, i) => <div key={i} className="text-center p-2 bg-gray-50 rounded">
                                   <p className="text-xs font-medium">{day.day}</p>
                                   <div className="my-1">
                                     {getWeatherIcon(day.conditions)}
@@ -529,23 +463,17 @@ const Index = () => {
                                   <p className="text-xs">
                                     <span className="font-medium">{day.high}°</span> / {day.low}°
                                   </p>
-                                </div>
-                              ))}
+                                </div>)}
                             </div>
                           </div>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4 text-gray-500">
+                        </div> : <div className="text-center py-4 text-gray-500">
                           <CloudOff className="h-8 w-8 mx-auto mb-2" />
                           <p>Weather data unavailable</p>
-                        </div>
-                      )}
+                        </div>}
                     </CardContent>
-                  </Card>
-                )}
+                  </Card>}
 
-                {useEnhancedBlog && includeLocation && (
-                  <Card>
+                {useEnhancedBlog && includeLocation && <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center">
                         <MapPin className="mr-2 h-5 w-5" />
@@ -553,12 +481,9 @@ const Index = () => {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      {isLoadingLocation ? (
-                        <div className="flex justify-center py-4">
+                      {isLoadingLocation ? <div className="flex justify-center py-4">
                           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                        </div>
-                      ) : locationData ? (
-                        <div className="space-y-2">
+                        </div> : locationData ? <div className="space-y-2">
                           <p className="font-medium">{locationData.name}</p>
                           <p className="text-sm text-gray-500">{locationData.country}</p>
                           <p className="text-sm text-gray-500">
@@ -567,19 +492,14 @@ const Index = () => {
                           <p className="text-sm text-gray-500">
                             Timezone: {locationData.timezone}
                           </p>
-                        </div>
-                      ) : (
-                        <div className="text-center py-4 text-gray-500">
+                        </div> : <div className="text-center py-4 text-gray-500">
                           <MapPin className="h-8 w-8 mx-auto mb-2" />
                           <p>Location data unavailable</p>
-                        </div>
-                      )}
+                        </div>}
                     </CardContent>
-                  </Card>
-                )}
+                  </Card>}
 
-                {useEnhancedBlog && includePhotos && (
-                  <Card>
+                {useEnhancedBlog && includePhotos && <Card>
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center">
@@ -592,8 +512,7 @@ const Index = () => {
                     <CardContent>
                       <PhotoPreview onSelectionChange={handlePhotoSelectionChange} />
                     </CardContent>
-                  </Card>
-                )}
+                  </Card>}
               </div>
             </div>
           </TabsContent>
@@ -624,8 +543,6 @@ const Index = () => {
         </Tabs>
       </main>
       <Toaster />
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
