@@ -74,6 +74,28 @@ function getWeatherEmoji(weatherData) {
 }
 
 /**
+ * Format location data for title
+ */
+function formatLocationForTitle(locationData) {
+  if (!locationData) return '';
+  
+  console.log('Formatting location for title:', locationData);
+  
+  // Try different location properties
+  if (locationData.name) return locationData.name;
+  if (locationData.city) return locationData.city;
+  if (locationData.address) return locationData.address;
+  if (locationData.locality) return locationData.locality;
+  
+  // If we have coordinates, format them
+  if (locationData.latitude && locationData.longitude) {
+    return `${locationData.latitude.toFixed(2)}, ${locationData.longitude.toFixed(2)}`;
+  }
+  
+  return '';
+}
+
+/**
  * Generate a blog post using Gemini 2.0 Flash with REAL location and weather context
  * @param {Object} params - Blog generation parameters
  * @param {string} params.topic - The main blog topic/notes
@@ -169,11 +191,9 @@ TITLE FORMAT:
     // Build the user prompt with comprehensive context
     const europeanDate = formatEuropeanDate();
     const weatherEmoji = getWeatherEmoji(weatherData);
+    const titleLocation = formatLocationForTitle(locationData);
     
-    let titleLocation = '';
-    if (locationData?.name) {
-      titleLocation = locationData.name;
-    }
+    console.log('Title location formatted:', titleLocation);
 
     let userPrompt = `Transform these rough notes into an engaging personal blog story for ${europeanDate}:
 
@@ -197,11 +217,13 @@ CRITICAL INSTRUCTIONS:
 `;
 
     // Add REAL location context with more detail
-    if (locationData?.name) {
+    if (locationData && titleLocation) {
       userPrompt += `REAL LOCATION CONTEXT:
-Location: ${locationData.name}
+Location: ${titleLocation}
 ${locationData.country ? `Country: ${locationData.country}` : ''}
 ${locationData.region ? `Region: ${locationData.region}` : ''}
+${locationData.state ? `State: ${locationData.state}` : ''}
+${locationData.address ? `Address: ${locationData.address}` : ''}
 Use this location naturally in your storytelling to set the scene and provide authentic geographic context.
 
 `;

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generateBlogWithGemini } from '../services/blogService';
 import { FileText, Sparkles, MapPin, Cloud, Camera, Newspaper, AlertCircle, Download, FileDown, Share2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import mermaid from 'mermaid';
 
 interface BlogGeneratorProps {
   weatherData?: any;
@@ -29,6 +30,22 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
   const [includeLocation, setIncludeLocation] = useState(true);
   const [includeNews, setIncludeNews] = useState(false);
 
+  // Initialize Mermaid
+  useEffect(() => {
+    mermaid.initialize({ 
+      startOnLoad: true,
+      theme: 'default',
+      securityLevel: 'loose'
+    });
+  }, []);
+
+  // Re-render Mermaid diagrams when blog content changes
+  useEffect(() => {
+    if (generatedBlog) {
+      mermaid.run();
+    }
+  }, [generatedBlog]);
+
   const handleGenerate = async () => {
     if (!notes.trim()) return;
 
@@ -37,6 +54,9 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
     setGeneratedBlog('');
     
     try {
+      console.log('Location data being passed:', locationData);
+      console.log('Weather data being passed:', weatherData);
+      
       const blog = await generateBlogWithGemini({
         topic: notes,
         locationData: includeLocation ? locationData : null,
@@ -145,7 +165,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
               {locationData && (
                 <Badge variant="outline" className="flex items-center space-x-1">
                   <MapPin className="h-3 w-3" />
-                  <span>{locationData.name || `${locationData.latitude?.toFixed(2)}, ${locationData.longitude?.toFixed(2)}`}</span>
+                  <span>{locationData.name || locationData.city || `${locationData.latitude?.toFixed(2)}, ${locationData.longitude?.toFixed(2)}`}</span>
                 </Badge>
               )}
               {weatherData && (
@@ -315,7 +335,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
           </CardHeader>
           <CardContent>
             <div 
-              className="blog-content prose prose-lg max-w-none prose-headings:text-gray-900 prose-h1:text-3xl prose-h1:font-bold prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-3 prose-h1:mb-6 prose-h2:text-xl prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-4 prose-p:mb-4 prose-p:leading-relaxed prose-p:text-gray-700"
+              className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-h1:text-3xl prose-h1:font-bold prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-3 prose-h1:mb-6 prose-h2:text-xl prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-4 prose-p:mb-4 prose-p:leading-relaxed prose-p:text-gray-700 prose-strong:text-gray-900 prose-em:text-gray-600"
               dangerouslySetInnerHTML={{ __html: generatedBlog }}
             />
           </CardContent>
