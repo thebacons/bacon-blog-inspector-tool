@@ -2,30 +2,30 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import PhotoPreview from "@/components/PhotoPreview";
+import LocationTracker from "@/components/LocationTracker";
+import WeatherForecast from "@/components/WeatherForecast";
 import { 
-  Calendar, 
-  Camera, 
-  MapPin, 
-  Cloud, 
   Sparkles, 
-  Plus, 
   Settings,
   User,
-  Image,
   MessageSquare,
+  Image,
   TrendingUp,
-  Eye
+  Eye,
+  Plus
 } from 'lucide-react';
 
 const Index = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [userNotes, setUserNotes] = useState('');
+  const [selectedPhotos, setSelectedPhotos] = useState<any[]>([]);
+  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [autoSources, setAutoSources] = useState({
     photos: true,
     weather: true,
@@ -54,9 +54,45 @@ const Index = () => {
 
   const handleGenerateBlog = async () => {
     setIsGenerating(true);
-    // This will connect to our MCP orchestrator
+    // This will integrate with the MCP orchestrator
+    console.log('Generating blog with:', {
+      notes: userNotes,
+      photos: selectedPhotos,
+      location: currentLocation,
+      autoSources
+    });
     setTimeout(() => setIsGenerating(false), 3000);
   };
+
+  const handlePhotoSelection = (photos: any[]) => {
+    setSelectedPhotos(photos);
+  };
+
+  // Extract photo locations for the location tracker
+  const photoLocations = selectedPhotos
+    .filter(photo => photo.location)
+    .map(photo => ({
+      latitude: photo.location.latitude,
+      longitude: photo.location.longitude,
+      timestamp: photo.timestamp,
+      name: photo.location.name,
+      source: 'photo' as const
+    }));
+
+  React.useEffect(() => {
+    // Get current location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setCurrentLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => console.error('Location error:', error)
+      );
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
@@ -85,7 +121,7 @@ const Index = () => {
       <div className="container mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
-          {/* Main Content - Blog Generator */}
+          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
             
             {/* Quick Stats */}
@@ -127,6 +163,27 @@ const Index = () => {
               </Card>
             </div>
 
+            {/* Enhanced Data Sources Tabs */}
+            <Tabs defaultValue="photos" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="photos">Photos & Memories</TabsTrigger>
+                <TabsTrigger value="location">Location & Travel</TabsTrigger>
+                <TabsTrigger value="weather">Weather & Environment</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="photos" className="space-y-4">
+                <PhotoPreview onSelectionChange={handlePhotoSelection} />
+              </TabsContent>
+              
+              <TabsContent value="location" className="space-y-4">
+                <LocationTracker photoLocations={photoLocations} />
+              </TabsContent>
+              
+              <TabsContent value="weather" className="space-y-4">
+                <WeatherForecast location={currentLocation} />
+              </TabsContent>
+            </Tabs>
+
             {/* Blog Generator */}
             <Card className="shadow-lg">
               <CardHeader>
@@ -143,53 +200,18 @@ const Index = () => {
                 {/* Auto Sources */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-sm uppercase tracking-wide text-gray-600">
-                    Auto-Include From Today
+                    Include in Blog
                   </h3>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    
-                    <div className="flex items-center space-x-3 p-3 rounded-lg border bg-gray-50">
-                      <Switch 
-                        checked={autoSources.photos}
-                        onCheckedChange={(checked) => setAutoSources(prev => ({...prev, photos: checked}))}
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Camera className="h-4 w-4 text-blue-600" />
-                        <Label className="text-sm">Photos</Label>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 rounded-lg border bg-gray-50">
-                      <Switch 
-                        checked={autoSources.weather}
-                        onCheckedChange={(checked) => setAutoSources(prev => ({...prev, weather: checked}))}
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Cloud className="h-4 w-4 text-green-600" />
-                        <Label className="text-sm">Weather</Label>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 rounded-lg border bg-gray-50">
-                      <Switch 
-                        checked={autoSources.location}
-                        onCheckedChange={(checked) => setAutoSources(prev => ({...prev, location: checked}))}
-                      />
-                      <div className="flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-red-600" />
-                        <Label className="text-sm">Location</Label>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center space-x-3 p-3 rounded-lg border bg-gray-50">
-                      <Switch 
-                        checked={autoSources.tasks}
-                        onCheckedChange={(checked) => setAutoSources(prev => ({...prev, tasks: checked}))}
-                      />
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-4 w-4 text-purple-600" />
-                        <Label className="text-sm">Tasks</Label>
-                      </div>
-                    </div>
+                  <div className="flex flex-wrap gap-3">
+                    <Badge variant={autoSources.photos ? "default" : "outline"} className="cursor-pointer">
+                      📸 {selectedPhotos.length} Photos Selected
+                    </Badge>
+                    <Badge variant={autoSources.weather ? "default" : "outline"} className="cursor-pointer">
+                      🌤️ Weather & Astronomy
+                    </Badge>
+                    <Badge variant={autoSources.location ? "default" : "outline"} className="cursor-pointer">
+                      📍 {photoLocations.length} Locations
+                    </Badge>
                   </div>
                 </div>
 
@@ -262,36 +284,34 @@ const Index = () => {
           {/* Sidebar */}
           <div className="space-y-6">
             
-            {/* Today's Data Preview */}
+            {/* Today's Summary */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Today's Data</CardTitle>
-                <CardDescription>Live preview of available content</CardDescription>
+                <CardTitle className="text-lg">Today's Summary</CardTitle>
+                <CardDescription>Live data overview</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50">
                   <div className="flex items-center space-x-2">
-                    <Camera className="h-4 w-4 text-blue-600" />
+                    <Image className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-medium">Photos</span>
                   </div>
-                  <Badge variant="secondary">7 new</Badge>
+                  <Badge variant="secondary">{selectedPhotos.length} selected</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
                   <div className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium">Location</span>
+                    <span className="text-sm font-medium">📍 Locations</span>
                   </div>
-                  <Badge variant="secondary">Aachen</Badge>
+                  <Badge variant="secondary">{photoLocations.length} visited</Badge>
                 </div>
                 
                 <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50">
                   <div className="flex items-center space-x-2">
-                    <Cloud className="h-4 w-4 text-yellow-600" />
-                    <span className="text-sm font-medium">Weather</span>
+                    <span className="text-sm font-medium">🌤️ Weather</span>
                   </div>
-                  <Badge variant="secondary">18°C</Badge>
+                  <Badge variant="secondary">22°C</Badge>
                 </div>
               </CardContent>
             </Card>
