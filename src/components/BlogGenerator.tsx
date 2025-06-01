@@ -10,9 +10,10 @@ import { FileText, Sparkles, MapPin, Cloud } from 'lucide-react';
 interface BlogGeneratorProps {
   weatherData?: any;
   locationData?: any;
+  selectedPhotos?: any[];
 }
 
-const BlogGenerator = ({ weatherData, locationData }: BlogGeneratorProps) => {
+const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogGeneratorProps) => {
   const [notes, setNotes] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBlog, setGeneratedBlog] = useState('');
@@ -26,7 +27,7 @@ const BlogGenerator = ({ weatherData, locationData }: BlogGeneratorProps) => {
         topic: notes,
         locationData,
         weatherData,
-        selectedPhotos: [] // TODO: Connect with photo selection
+        selectedPhotos
       });
       setGeneratedBlog(blog);
     } catch (error) {
@@ -59,6 +60,12 @@ const BlogGenerator = ({ weatherData, locationData }: BlogGeneratorProps) => {
                 <Badge variant="outline" className="flex items-center space-x-1">
                   <Cloud className="h-3 w-3" />
                   <span>{weatherData.temperature}°C, {weatherData.conditions}</span>
+                </Badge>
+              )}
+              {selectedPhotos.length > 0 && (
+                <Badge variant="outline" className="flex items-center space-x-1">
+                  <FileText className="h-3 w-3" />
+                  <span>{selectedPhotos.length} photos selected</span>
                 </Badge>
               )}
             </div>

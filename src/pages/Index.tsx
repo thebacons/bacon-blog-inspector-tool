@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import BlogGenerator from '../components/BlogGenerator';
 import IdeasProjectsManager from '../components/IdeasProjectsManager';
@@ -14,6 +15,7 @@ const Index = () => {
   const [showMCPSettings, setShowMCPSettings] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [weatherData, setWeatherData] = useState<any>(null);
+  const [selectedPhotos, setSelectedPhotos] = useState<any[]>([]);
 
   const handleLocationUpdate = (location: { latitude: number; longitude: number }) => {
     console.log('Location updated:', location);
@@ -25,18 +27,23 @@ const Index = () => {
     setWeatherData(weather);
   };
 
+  const handlePhotoSelectionChange = (photos: any[]) => {
+    console.log('Photo selection changed:', photos);
+    setSelectedPhotos(photos);
+  };
+
   const renderActiveTab = () => {
     switch (activeTab) {
       case 'blog':
-        return <BlogGenerator weatherData={weatherData} locationData={currentLocation} />;
+        return <BlogGenerator weatherData={weatherData} locationData={currentLocation} selectedPhotos={selectedPhotos} />;
       case 'ideas':
         return <IdeasProjectsManager />;
       case 'weather':
         return <WeatherForecast location={currentLocation} onWeatherData={handleWeatherUpdate} />;
       case 'photos':
-        return <PhotoPreview />;
+        return <PhotoPreview onSelectionChange={handlePhotoSelectionChange} />;
       default:
-        return <BlogGenerator weatherData={weatherData} locationData={currentLocation} />;
+        return <BlogGenerator weatherData={weatherData} locationData={currentLocation} selectedPhotos={selectedPhotos} />;
     }
   };
 
@@ -134,7 +141,7 @@ const Index = () => {
         {renderActiveTab()}
 
         {/* Location Tracker (hidden but active) */}
-        <LocationTracker onLocationUpdate={handleLocationUpdate} />
+        <LocationTracker photoLocations={[]} />
       </main>
     </div>
   );
