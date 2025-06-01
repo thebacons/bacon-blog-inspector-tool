@@ -31,6 +31,49 @@ function getGoogleAPIKey() {
 }
 
 /**
+ * Format date in European format with ordinal suffix
+ */
+function formatEuropeanDate() {
+  const now = new Date();
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  
+  const weekday = weekdays[now.getDay()];
+  const day = now.getDate();
+  const month = months[now.getMonth()];
+  const year = now.getFullYear();
+  
+  // Add ordinal suffix
+  const getOrdinalSuffix = (day) => {
+    if (day > 3 && day < 21) return 'th';
+    switch (day % 10) {
+      case 1: return 'st';
+      case 2: return 'nd';
+      case 3: return 'rd';
+      default: return 'th';
+    }
+  };
+  
+  return `${weekday} ${day}${getOrdinalSuffix(day)} ${month}, ${year}`;
+}
+
+/**
+ * Get weather emoji for title
+ */
+function getWeatherEmoji(weatherData) {
+  if (!weatherData?.current?.conditions) return '';
+  
+  const conditions = weatherData.current.conditions.toLowerCase();
+  if (conditions.includes('sun') || conditions.includes('clear')) return '☀️';
+  if (conditions.includes('cloud') || conditions.includes('overcast')) return '⛅';
+  if (conditions.includes('rain')) return '🌧️';
+  if (conditions.includes('snow')) return '❄️';
+  if (conditions.includes('storm') || conditions.includes('thunder')) return '⛈️';
+  if (conditions.includes('fog') || conditions.includes('mist')) return '🌫️';
+  return '🌤️';
+}
+
+/**
  * Generate a blog post using Gemini 2.0 Flash with REAL location and weather context
  * @param {Object} params - Blog generation parameters
  * @param {string} params.topic - The main blog topic/notes
@@ -116,20 +159,32 @@ OUTPUT FORMAT:
 - Return clean HTML with h1 for title, h2 for sections, p for paragraphs
 - Create engaging titles that capture the day's essence and mood
 - Structure as natural story flow, not a list of activities
-- No markdown - pure HTML only`;
+- No markdown - pure HTML only
+
+TITLE FORMAT:
+- Include the formatted date and location in the title
+- Format: [European Date] - [Story Title], [Location] [Weather Emoji]
+- Example: "Sunday 1st June, 2025 - A Wonderful Day, Roetgen ☀️"`;
 
     // Build the user prompt with comprehensive context
-    const currentDate = new Date().toLocaleDateString('en-US', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    });
+    const europeanDate = formatEuropeanDate();
+    const weatherEmoji = getWeatherEmoji(weatherData);
+    
+    let titleLocation = '';
+    if (locationData?.name) {
+      titleLocation = locationData.name;
+    }
 
-    let userPrompt = `Transform these rough notes into an engaging personal blog story for ${currentDate}:
+    let userPrompt = `Transform these rough notes into an engaging personal blog story for ${europeanDate}:
 
 ROUGH NOTES TO TRANSFORM:
 "${topic}"
+
+TITLE REQUIREMENTS:
+- Start the title with: "${europeanDate}"
+- Add location if available: "${titleLocation}"
+- Add weather emoji: "${weatherEmoji}"
+- Example format: "${europeanDate} - [Your Story Title]${titleLocation ? ', ' + titleLocation : ''} ${weatherEmoji}"
 
 CRITICAL INSTRUCTIONS: 
 - These are rough, disconnected notes. Transform them into a beautiful, flowing personal story

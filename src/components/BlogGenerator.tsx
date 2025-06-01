@@ -315,7 +315,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
           </CardHeader>
           <CardContent>
             <div 
-              className="prose max-w-none prose-headings:text-gray-900 prose-h1:text-2xl prose-h1:font-bold prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-2 prose-h2:text-xl prose-h2:font-semibold prose-h2:mt-6 prose-p:mb-4 prose-p:leading-relaxed"
+              className="blog-content prose prose-lg max-w-none prose-headings:text-gray-900 prose-h1:text-3xl prose-h1:font-bold prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-3 prose-h1:mb-6 prose-h2:text-xl prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-4 prose-p:mb-4 prose-p:leading-relaxed prose-p:text-gray-700"
               dangerouslySetInnerHTML={{ __html: generatedBlog }}
             />
           </CardContent>
