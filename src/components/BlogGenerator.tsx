@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -359,7 +360,14 @@ const BlogGenerator = ({ weatherData, locationData: propLocationData, selectedPh
           </CardHeader>
           <CardContent>
             <div 
-              className="prose prose-lg max-w-none prose-headings:text-gray-900 prose-h1:text-3xl prose-h1:font-bold prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-3 prose-h1:mb-6 prose-h2:text-xl prose-h2:font-semibold prose-h2:mt-8 prose-h2:mb-4 prose-p:mb-4 prose-p:leading-relaxed prose-p:text-gray-700 prose-strong:text-gray-900 prose-em:text-gray-600"
+              className="prose prose-lg max-w-none 
+                prose-headings:font-bold prose-headings:text-gray-900 
+                prose-h1:text-4xl prose-h1:font-bold prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-3 prose-h1:mb-6 prose-h1:mt-0
+                prose-h2:text-2xl prose-h2:font-bold prose-h2:mt-8 prose-h2:mb-4 
+                prose-h3:text-xl prose-h3:font-bold prose-h3:mt-6 prose-h3:mb-3
+                prose-p:mb-4 prose-p:leading-relaxed prose-p:text-gray-700 
+                prose-strong:text-gray-900 prose-strong:font-bold
+                prose-em:text-gray-600"
               dangerouslySetInnerHTML={{ __html: generatedBlog }}
             />
           </CardContent>
