@@ -360,52 +360,54 @@ const BlogGenerator = ({ weatherData, locationData: propLocationData, selectedPh
             </div>
           </CardHeader>
           <CardContent>
+            <style>
+              {`
+                .blog-content h1 {
+                  font-size: 2.25rem;
+                  font-weight: 700;
+                  color: #111827;
+                  border-bottom: 2px solid #e5e7eb;
+                  padding-bottom: 0.75rem;
+                  margin-bottom: 1.5rem;
+                  margin-top: 0;
+                }
+                .blog-content h2 {
+                  font-size: 1.5rem;
+                  font-weight: 700;
+                  color: #111827;
+                  margin-top: 2rem;
+                  margin-bottom: 1rem;
+                }
+                .blog-content h3 {
+                  font-size: 1.25rem;
+                  font-weight: 600;
+                  color: #111827;
+                  margin-top: 1.5rem;
+                  margin-bottom: 0.75rem;
+                }
+                .blog-content p {
+                  margin-bottom: 1rem;
+                  line-height: 1.75;
+                  color: #374151;
+                }
+                .blog-content strong {
+                  font-weight: 700;
+                  color: #111827;
+                }
+                .blog-content em {
+                  font-style: italic;
+                  color: #6b7280;
+                }
+              `}
+            </style>
             <div 
-              className="max-w-none"
+              className="blog-content"
               style={{
                 lineHeight: '1.6',
                 color: '#374151'
               }}
               dangerouslySetInnerHTML={{ __html: generatedBlog }}
             />
-            <style jsx>{`
-              .max-w-none h1 {
-                font-size: 2.25rem !important;
-                font-weight: 700 !important;
-                color: #111827 !important;
-                border-bottom: 2px solid #e5e7eb !important;
-                padding-bottom: 0.75rem !important;
-                margin-bottom: 1.5rem !important;
-                margin-top: 0 !important;
-              }
-              .max-w-none h2 {
-                font-size: 1.5rem !important;
-                font-weight: 700 !important;
-                color: #111827 !important;
-                margin-top: 2rem !important;
-                margin-bottom: 1rem !important;
-              }
-              .max-w-none h3 {
-                font-size: 1.25rem !important;
-                font-weight: 600 !important;
-                color: #111827 !important;
-                margin-top: 1.5rem !important;
-                margin-bottom: 0.75rem !important;
-              }
-              .max-w-none p {
-                margin-bottom: 1rem !important;
-                line-height: 1.75 !important;
-                color: #374151 !important;
-              }
-              .max-w-none strong {
-                font-weight: 700 !important;
-                color: #111827 !important;
-              }
-              .max-w-none em {
-                font-style: italic !important;
-                color: #6b7280 !important;
-              }
-            `}</style>
           </CardContent>
         </Card>
       )}
