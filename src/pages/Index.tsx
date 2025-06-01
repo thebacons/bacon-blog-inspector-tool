@@ -121,7 +121,7 @@ const Index = () => {
       console.error('Blog generation error:', error);
       toast({
         title: "Generation Failed",
-        description: error.message || "Failed to generate blog content. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to generate blog content. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -140,8 +140,11 @@ const Index = () => {
 
   // Fetch real weather data based on location
   const { data: weather, isLoading: isLoadingWeather } = useQuery({
-    queryKey: ["weather", location?.latitude, location?.longitude],
-    queryFn: () => location ? getWeatherForLocation(location.latitude, location.longitude) : null,
+    queryKey: ["weather", (location as LocationData)?.latitude, (location as LocationData)?.longitude],
+    queryFn: () => {
+      const locationData = location as LocationData;
+      return locationData ? getWeatherForLocation(locationData.latitude, locationData.longitude) : null;
+    },
     enabled: includeWeather && !!location,
     staleTime: 10 * 60 * 1000, // 10 minutes
     retry: 1
@@ -308,6 +311,17 @@ const Index = () => {
                   Currently using enhanced mock generation with location and weather context
                 </p>
               </div>
+            </div>
+          </div>
+        )}
+
+        {showMCPSettings && (
+          <div className="mb-6">
+            <MCPServerManager />
+            <div className="mt-4">
+              <Button onClick={() => setShowMCPSettings(false)} variant="outline">
+                Close MCP Settings
+              </Button>
             </div>
           </div>
         )}
