@@ -4,105 +4,181 @@
  */
 
 /**
- * Get location data from coordinates
- * @param {number} latitude 
- * @param {number} longitude 
- * @returns {Promise<Object>} Location data
- */
-export async function getLocationFromCoordinates(latitude, longitude) {
-  try {
-    // For now, return enhanced mock data based on coordinates
-    // In a real implementation, you'd use a geocoding service like Google Maps API
-    console.log(`Getting location for coordinates: ${latitude}, ${longitude}`);
-    
-    return {
-      name: determineLocationName(latitude, longitude),
-      latitude,
-      longitude,
-      country: determineCountry(latitude, longitude),
-      timezone: determineTimezone(latitude, longitude)
-    };
-  } catch (error) {
-    console.error('Error fetching location data:', error);
-    return null;
-  }
-}
-
-/**
- * Get current location using browser geolocation
+ * Get current location using browser geolocation with IP fallback
  * @returns {Promise<Object|null>} Location data or null if unavailable
  */
 export async function getCurrentLocation() {
   try {
-    if (!navigator.geolocation) {
-      console.log('Geolocation not supported');
-      return null;
+    console.log('Attempting to get current location...');
+    
+    // First try browser geolocation (GPS)
+    if (navigator.geolocation) {
+      console.log('Browser geolocation available, requesting position...');
+      
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              console.log('GPS location obtained:', pos.coords.latitude, pos.coords.longitude);
+              resolve(pos);
+            },
+            (err) => {
+              console.log('GPS location failed:', err.message);
+              reject(err);
+            },
+            { 
+              enableHighAccuracy: true, 
+              timeout: 10000, 
+              maximumAge: 300000 // 5 minutes
+            }
+          );
+        });
+
+        const { latitude, longitude } = position.coords;
+        
+        // Get location name from coordinates
+        const locationName = await getLocationNameFromCoordinates(latitude, longitude);
+        
+        return {
+          name: locationName,
+          latitude,
+          longitude,
+          country: await getCountryFromCoordinates(latitude, longitude),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          source: 'gps'
+        };
+      } catch (geoError) {
+        console.log('GPS geolocation failed, falling back to IP location');
+      }
     }
-
-    const position = await new Promise((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => resolve(pos),
-        (err) => reject(err),
-        { 
-          enableHighAccuracy: true, 
-          timeout: 10000, 
-          maximumAge: 300000 // 5 minutes
-        }
-      );
-    });
-
-    const { latitude, longitude } = position.coords;
-    return await getLocationFromCoordinates(latitude, longitude);
+    
+    // Fallback to IP-based location
+    console.log('Using IP-based location detection...');
+    return await getLocationFromIP();
+    
   } catch (error) {
-    console.log('Error getting current location:', error.message);
+    console.error('All location detection methods failed:', error);
     return getMockLocationData();
   }
 }
 
-// Helper functions for location determination
-function determineLocationName(lat, lng) {
-  // Simple location determination based on coordinates
-  // In production, use a proper geocoding service
-  if (lat >= 37.7 && lat <= 37.8 && lng >= -122.5 && lng <= -122.4) {
-    return "San Francisco, CA";
+/**
+ * Get location from IP address
+ */
+async function getLocationFromIP() {
+  try {
+    console.log('Fetching location from IP...');
+    
+    // Try ipapi.co first (free, no API key needed)
+    const response = await fetch('https://ipapi.co/json/');
+    const data = await response.json();
+    
+    if (data.latitude && data.longitude) {
+      console.log('IP location obtained:', data.city, data.country_name);
+      return {
+        name: `${data.city}, ${data.region}`,
+        latitude: data.latitude,
+        longitude: data.longitude,
+        country: data.country_name,
+        timezone: data.timezone,
+        source: 'ip'
+      };
+    }
+    
+    throw new Error('No valid IP location data received');
+  } catch (error) {
+    console.error('IP location failed:', error);
+    
+    // Try alternative IP service
+    try {
+      const response = await fetch('https://ipinfo.io/json');
+      const data = await response.json();
+      
+      if (data.loc) {
+        const [lat, lng] = data.loc.split(',').map(Number);
+        console.log('Alternative IP location obtained:', data.city, data.country);
+        
+        return {
+          name: `${data.city}, ${data.region}`,
+          latitude: lat,
+          longitude: lng,
+          country: data.country,
+          timezone: data.timezone,
+          source: 'ip-fallback'
+        };
+      }
+    } catch (fallbackError) {
+      console.error('IP fallback failed:', fallbackError);
+    }
+    
+    return getMockLocationData();
   }
-  if (lat >= 40.7 && lat <= 40.8 && lng >= -74.1 && lng <= -73.9) {
-    return "New York, NY";
-  }
-  if (lat >= 51.4 && lat <= 51.6 && lng >= -0.2 && lng <= 0.1) {
-    return "London, UK";
-  }
-  return `Location ${lat.toFixed(2)}, ${lng.toFixed(2)}`;
 }
 
-function determineCountry(lat, lng) {
-  if (lat >= 24 && lat <= 49 && lng >= -125 && lng <= -66) {
-    return "United States";
+/**
+ * Get location name from coordinates using reverse geocoding
+ */
+async function getLocationNameFromCoordinates(latitude, longitude) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`,
+      {
+        headers: {
+          'User-Agent': 'Lovable-Blog-Generator/1.0'
+        }
+      }
+    );
+    
+    const data = await response.json();
+    if (data.display_name) {
+      // Extract city and region from the detailed name
+      const parts = data.display_name.split(',');
+      if (parts.length >= 3) {
+        return `${parts[0].trim()}, ${parts[1].trim()}`;
+      }
+      return parts[0].trim();
+    }
+    
+    return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+  } catch (error) {
+    console.error('Reverse geocoding failed:', error);
+    return `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
   }
-  if (lat >= 49 && lat <= 61 && lng >= -141 && lng <= -52) {
-    return "Canada";
-  }
-  if (lat >= 49.9 && lat <= 58.7 && lng >= -8.2 && lng <= 1.8) {
-    return "United Kingdom";
-  }
-  return "Unknown";
 }
 
-function determineTimezone(lat, lng) {
-  // Simple timezone determination
-  if (lng >= -125 && lng <= -114) return "America/Los_Angeles";
-  if (lng >= -114 && lng <= -84) return "America/Denver";
-  if (lng >= -84 && lng <= -66) return "America/New_York";
-  if (lng >= -8.2 && lng <= 1.8) return "Europe/London";
-  return "UTC";
+/**
+ * Get country from coordinates
+ */
+async function getCountryFromCoordinates(latitude, longitude) {
+  try {
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=3`,
+      {
+        headers: {
+          'User-Agent': 'Lovable-Blog-Generator/1.0'
+        }
+      }
+    );
+    
+    const data = await response.json();
+    return data.address?.country || 'Unknown';
+  } catch (error) {
+    console.error('Country lookup failed:', error);
+    return 'Unknown';
+  }
 }
 
+/**
+ * Fallback mock location data
+ */
 function getMockLocationData() {
+  console.log('Using fallback mock location data');
   return {
     name: "San Francisco, CA",
     latitude: 37.7749,
     longitude: -122.4194,
     country: "United States",
-    timezone: "America/Los_Angeles"
+    timezone: "America/Los_Angeles",
+    source: 'fallback'
   };
 }

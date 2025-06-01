@@ -1,15 +1,14 @@
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY || 'demo-key');
 
 /**
- * Generate a blog post using Gemini 2.5 Flash with location and weather context
+ * Generate a blog post using Gemini 2.5 Flash with REAL location and weather context
  * @param {Object} params - Blog generation parameters
  * @param {string} params.topic - The main blog topic/notes
- * @param {Object} params.locationData - Location information
- * @param {Object} params.weatherData - Weather information
+ * @param {Object} params.locationData - REAL location information from GPS/IP
+ * @param {Object} params.weatherData - REAL weather information from weather APIs
  * @param {Array} params.selectedPhotos - Selected photos with metadata
  * @returns {Promise<string>} - Generated blog post HTML
  */
@@ -18,37 +17,43 @@ export async function generateBlogWithGemini({ topic, locationData, weatherData,
     // Check if we have a real API key
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
     if (!apiKey || apiKey === 'demo-key') {
-      console.warn('No Gemini API key found, using enhanced mock generation');
-      return generateEnhancedMockBlog({ topic, locationData, weatherData, selectedPhotos });
+      console.warn('No Gemini API key found, using enhanced mock generation with REAL data');
+      return generateEnhancedBlogWithRealData({ topic, locationData, weatherData, selectedPhotos });
     }
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     
     // Create comprehensive system prompt
-    const systemPrompt = `You are a personal blog writing assistant. Your role is to transform daily notes and experiences into engaging, narrative-driven blog posts that feel authentic and personal.
+    const systemPrompt = `You are a personal blog writing assistant that creates authentic, engaging blog posts from daily experiences. 
 
 WRITING STYLE:
-- Write in first person as if the user experienced this day
-- Create flowing, natural narratives that connect different activities
-- Use descriptive language that paints a picture of the day
-- Include sensory details and emotional reflections
-- Structure with clear sections but natural transitions
-- Aim for 400-600 words for a substantial but readable post
+- Write in first person as someone who lived this day
+- Create flowing narratives that connect activities naturally
+- Use vivid, sensory descriptions that paint a picture
+- Include emotional reflections and personal insights
+- Structure with clear sections but smooth transitions
+- Target 400-600 words for substantial but readable content
 
-CONTENT INTEGRATION:
-- Seamlessly weave weather conditions into the narrative mood and activities
-- Reference location naturally to provide context and atmosphere
-- Connect photos to the story when available, describing what they capture
-- Transform simple notes into engaging storytelling
-- Add thoughtful reflections on the day's experiences
+REAL DATA INTEGRATION:
+- The location and weather data provided is REAL, not simulated
+- Reference the actual weather conditions to set mood and context
+- Mention the real location naturally to provide authentic setting
+- Connect weather to activities (e.g., "the crisp 8°C morning made the coffee taste even better")
+- Use weather as narrative elements (sunny day = optimistic tone, rainy = cozy/reflective)
+
+AUTHENTICITY MARKERS:
+- Reference specific temperatures, conditions, and locations provided
+- Make weather feel like it influenced the day's activities and mood
+- Use real place names and geographic context when available
+- Connect environmental conditions to personal experiences
 
 OUTPUT FORMAT:
 - Return clean HTML with h1 for title, h2 for sections, p for paragraphs
-- Create an engaging title that reflects the day's main theme
-- Structure: Opening reflection, main activities, photo moments (if any), closing thoughts
-- No markdown formatting - pure HTML only`;
+- Create engaging titles that reflect the real location/weather when relevant
+- Structure: Opening scene-setting, main activities, reflections, conclusion
+- No markdown - pure HTML only`;
 
-    // Build the user prompt with all context
+    // Build the user prompt with REAL context data
     const currentDate = new Date().toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -56,37 +61,38 @@ OUTPUT FORMAT:
       day: 'numeric' 
     });
 
-    let userPrompt = `Write a personal blog post for ${currentDate} based on these details:
+    let userPrompt = `Write a personal blog post for ${currentDate} based on these real experiences and conditions:
 
 DAILY NOTES/ACTIVITIES:
 ${topic}
 
 `;
 
-    // Add location context
+    // Add REAL location context with source info
     if (locationData?.name) {
-      userPrompt += `LOCATION:
-Currently in ${locationData.name}
+      userPrompt += `REAL LOCATION DATA (Source: ${locationData.source || 'unknown'}):
+Location: ${locationData.name}
 ${locationData.country ? `Country: ${locationData.country}` : ''}
 ${locationData.timezone ? `Timezone: ${locationData.timezone}` : ''}
+Coordinates: ${locationData.latitude?.toFixed(4)}, ${locationData.longitude?.toFixed(4)}
 
 `;
     }
 
-    // Add weather context
-    if (weatherData?.temperature) {
-      userPrompt += `WEATHER CONDITIONS:
-Temperature: ${weatherData.temperature}${weatherData.unit || '°C'}
-Conditions: ${weatherData.conditions || 'Pleasant'}
-${weatherData.feelsLike ? `Feels like: ${weatherData.feelsLike}${weatherData.unit || '°C'}` : ''}
+    // Add REAL weather context with source info
+    if (weatherData?.temperature !== undefined) {
+      userPrompt += `REAL WEATHER CONDITIONS (Source: ${weatherData.source || 'unknown'}):
+Current Temperature: ${weatherData.temperature}${weatherData.unit || '°C'}
+Conditions: ${weatherData.conditions || 'Unknown'}
+${weatherData.feelsLike ? `Feels Like: ${weatherData.feelsLike}${weatherData.unit || '°C'}` : ''}
 ${weatherData.humidity ? `Humidity: ${weatherData.humidity}%` : ''}
-${weatherData.windSpeed ? `Wind: ${weatherData.windSpeed} km/h` : ''}
+${weatherData.windSpeed ? `Wind Speed: ${weatherData.windSpeed} km/h` : ''}
 
 `;
 
       // Add forecast if available
       if (weatherData.forecast?.length > 0) {
-        userPrompt += `FORECAST:
+        userPrompt += `WEATHER FORECAST:
 `;
         weatherData.forecast.slice(0, 3).forEach(day => {
           userPrompt += `${day.day}: ${day.conditions}, High ${day.high}°, Low ${day.low}°
@@ -99,7 +105,7 @@ ${weatherData.windSpeed ? `Wind: ${weatherData.windSpeed} km/h` : ''}
 
     // Add photo context
     if (selectedPhotos.length > 0) {
-      userPrompt += `PHOTOS TAKEN TODAY (${selectedPhotos.length} photos):
+      userPrompt += `PHOTOS FROM TODAY (${selectedPhotos.length} photos):
 `;
       selectedPhotos.forEach((photo, index) => {
         userPrompt += `Photo ${index + 1}:`;
@@ -109,22 +115,26 @@ ${weatherData.windSpeed ? `Wind: ${weatherData.windSpeed} km/h` : ''}
         if (photo.aiAnalysis?.mood) {
           userPrompt += ` (Mood: ${photo.aiAnalysis.mood})`;
         }
-        if (photo.aiAnalysis?.activity) {
-          userPrompt += ` (Activity: ${photo.aiAnalysis.activity})`;
-        }
         if (photo.location?.name) {
           userPrompt += ` (Location: ${photo.location.name})`;
         }
         userPrompt += `
 `;
       });
-      userPrompt += `
-`;
     }
 
-    userPrompt += `Transform these details into an engaging, personal blog post that tells the story of this day. Make it feel authentic and reflective, as if written by someone who truly experienced these moments.`;
+    userPrompt += `
+IMPORTANT: Use this REAL location and weather data to create an authentic blog post. The weather and location information is actual data from today, not fictional. Make the environmental conditions feel like they genuinely influenced the day's experiences and mood.
 
-    console.log('Sending request to Gemini 2.5 Flash:', { topic: topic.substring(0, 50) + '...' });
+Transform these real details into an engaging, personal narrative that captures both the activities and the authentic environmental context of this specific day and location.`;
+
+    console.log('Sending request to Gemini 2.5 Flash with REAL data:', { 
+      topic: topic.substring(0, 50) + '...',
+      location: locationData?.name,
+      weather: `${weatherData?.temperature}°C, ${weatherData?.conditions}`,
+      weatherSource: weatherData?.source,
+      locationSource: locationData?.source
+    });
 
     // Generate content with Gemini
     const result = await model.generateContent([
@@ -135,20 +145,27 @@ ${weatherData.windSpeed ? `Wind: ${weatherData.windSpeed} km/h` : ''}
     const response = await result.response;
     const blogContent = response.text();
 
-    console.log('Blog post generated successfully with Gemini 2.5 Flash');
+    console.log('Blog post generated successfully with REAL data using Gemini 2.5 Flash');
     return blogContent;
 
   } catch (error) {
     console.error('Error generating blog with Gemini:', error);
-    // Fallback to enhanced mock generation
-    return generateEnhancedMockBlog({ topic, locationData, weatherData, selectedPhotos });
+    // Fallback to enhanced generation with real data
+    return generateEnhancedBlogWithRealData({ topic, locationData, weatherData, selectedPhotos });
   }
 }
 
 /**
- * Enhanced mock blog generation (fallback)
+ * Enhanced blog generation using REAL location and weather data (fallback)
  */
-function generateEnhancedMockBlog({ topic, locationData, weatherData, selectedPhotos = [] }) {
+function generateEnhancedBlogWithRealData({ topic, locationData, weatherData, selectedPhotos = [] }) {
+  console.log('Generating enhanced blog with REAL data:', {
+    location: locationData?.name,
+    locationSource: locationData?.source,
+    weather: weatherData ? `${weatherData.temperature}°C, ${weatherData.conditions}` : 'No weather',
+    weatherSource: weatherData?.source
+  });
+
   const currentDate = new Date().toLocaleDateString('en-US', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -156,26 +173,37 @@ function generateEnhancedMockBlog({ topic, locationData, weatherData, selectedPh
     day: 'numeric' 
   });
 
-  // Create smart title based on content
-  const activities = parseActivities(topic);
-  const mainActivity = activities.length > 0 ? activities[0] : 'day';
+  // Create smart title using REAL data
+  const locationPart = locationData?.name ? ` in ${locationData.name.split(',')[0]}` : '';
   const weatherAdj = weatherData?.conditions ? getWeatherAdjective(weatherData.conditions) : 'Beautiful';
-  const title = `${weatherAdj} ${currentDate.split(',')[0]}: ${capitalizeFirst(mainActivity)}`;
+  const title = `${weatherAdj} ${currentDate.split(',')[0]}${locationPart}`;
 
   let blogContent = `<h1>${title}</h1>
 
 <p>What a wonderful ${currentDate}! `;
 
-  // Weather opening
-  if (weatherData?.temperature) {
+  // Use REAL weather data in opening
+  if (weatherData?.temperature !== undefined) {
     const temp = weatherData.temperature;
     const unit = weatherData.unit || '°C';
-    const conditions = weatherData.conditions || 'pleasant';
-    blogContent += `The day began with ${conditions.toLowerCase()} skies and a comfortable ${temp}${unit}. `;
+    const conditions = weatherData.conditions || 'pleasant conditions';
+    const source = weatherData.source ? ` (via ${weatherData.source})` : '';
+    
+    blogContent += `The day began with ${conditions} and a ${temp < 10 ? 'crisp' : temp > 25 ? 'warm' : 'comfortable'} ${temp}${unit}. `;
+    
+    if (weatherData.feelsLike && Math.abs(weatherData.feelsLike - temp) > 3) {
+      blogContent += `Though it felt more like ${weatherData.feelsLike}${unit}. `;
+    }
   }
 
+  // Use REAL location data
   if (locationData?.name) {
+    const source = locationData.source ? ` (detected via ${locationData.source})` : '';
     blogContent += `Here in ${locationData.name}, `;
+    
+    if (locationData.country && !locationData.name.includes(locationData.country)) {
+      blogContent += `${locationData.country}, `;
+    }
   }
 
   blogContent += `it's been one of those days that reminds me why I love documenting these moments.</p>
@@ -196,21 +224,37 @@ function generateEnhancedMockBlog({ topic, locationData, weatherData, selectedPh
       }
     });
     
-    blogContent += `Each photograph tells part of today's story.</p>
+    blogContent += `Each photograph tells part of today's story, preserved against the backdrop of ${weatherData?.conditions || 'today\'s conditions'}.</p>
 `;
   }
 
-  // Closing reflection
+  // Weather-informed closing reflection
   blogContent += `
 <h2>Evening Reflections</h2>
-<p>As ${currentDate} draws to a close, I'm filled with gratitude for these simple yet meaningful experiences. `;
+<p>As ${currentDate} draws to a close`;
 
-  if (weatherData?.forecast?.length > 0) {
-    const tomorrow = weatherData.forecast[0];
-    blogContent += `Looking ahead to tomorrow's ${tomorrow.conditions.toLowerCase()} weather, `;
+  if (weatherData?.temperature !== undefined) {
+    const evening = weatherData.temperature > 20 ? ', with the warm evening air still holding the day\'s warmth' : 
+                   weatherData.temperature < 5 ? ', as the cool air settles in' : 
+                   ', with the pleasant temperature making for a perfect evening';
+    blogContent += evening;
   }
 
-  blogContent += `days like these remind us to appreciate the beauty in routine and the importance of being present in each moment.</p>`;
+  blogContent += `, I'm filled with gratitude for these experiences. `;
+
+  // Use REAL forecast if available
+  if (weatherData?.forecast?.length > 0) {
+    const tomorrow = weatherData.forecast[0];
+    blogContent += `Looking ahead to tomorrow's ${tomorrow.conditions} weather (expecting ${tomorrow.high}°C), `;
+  }
+
+  blogContent += `days like these remind us to appreciate both the grand moments and the simple pleasures that make life meaningful.</p>
+
+<div style="margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 5px; font-size: 0.9em; color: #666;">
+<strong>Today's Real Data:</strong><br>
+${locationData ? `📍 Location: ${locationData.name} (via ${locationData.source})` : '📍 Location: Not available'}<br>
+${weatherData ? `🌤️ Weather: ${weatherData.temperature}°C, ${weatherData.conditions} (via ${weatherData.source})` : '🌤️ Weather: Not available'}
+</div>`;
 
   return blogContent;
 }
@@ -242,10 +286,10 @@ function parseActivities(notes) {
 
 function getWeatherAdjective(conditions) {
   const condition = conditions?.toLowerCase() || '';
-  if (condition.includes('sunny')) return 'Sun-Kissed';
+  if (condition.includes('sunny') || condition.includes('clear')) return 'Sun-Kissed';
   if (condition.includes('cloudy')) return 'Thoughtful';
   if (condition.includes('rain')) return 'Refreshing';
-  if (condition.includes('clear')) return 'Crystal Clear';
+  if (condition.includes('snow')) return 'Serene';
   return 'Beautiful';
 }
 
@@ -254,17 +298,25 @@ function capitalizeFirst(str) {
 }
 
 function createNarrativeFromNotes(notes, weatherData, locationData) {
-  // Transform simple notes into flowing narrative
   let narrative = notes;
   
-  // Add weather context
-  if (weatherData?.conditions) {
-    narrative += ` The ${weatherData.conditions.toLowerCase()} weather provided the perfect backdrop for the day's activities.`;
+  // Add real weather context to narrative
+  if (weatherData?.conditions && weatherData?.temperature !== undefined) {
+    const temp = weatherData.temperature;
+    const conditions = weatherData.conditions.toLowerCase();
+    
+    if (temp < 5) {
+      narrative += ` The cold ${temp}°C weather with ${conditions} made every warm moment inside feel extra cozy.`;
+    } else if (temp > 25) {
+      narrative += ` The warm ${temp}°C day with ${conditions} provided perfect conditions for outdoor activities.`;
+    } else {
+      narrative += ` The pleasant ${temp}°C weather and ${conditions} made it an ideal day to be out and about.`;
+    }
   }
   
-  // Add location context
+  // Add real location context
   if (locationData?.name) {
-    narrative += ` Being in ${locationData.name} added an extra dimension to these experiences.`;
+    narrative += ` Being in ${locationData.name} added a special dimension to these experiences.`;
   }
   
   return narrative;
