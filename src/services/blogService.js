@@ -2,6 +2,35 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
+ * Get API key from localStorage (API Key Manager) or environment
+ */
+function getGoogleAPIKey() {
+  // First check localStorage for API keys from API Key Manager
+  try {
+    const storedKeys = localStorage.getItem('api_keys');
+    if (storedKeys) {
+      const apiKeys = JSON.parse(storedKeys);
+      const googleKey = apiKeys.find(key => key.provider === 'google' && key.isActive && key.value);
+      if (googleKey && googleKey.value && googleKey.value !== 'demo-key') {
+        console.log('Using Google API key from API Key Manager');
+        return googleKey.value;
+      }
+    }
+  } catch (error) {
+    console.error('Error reading API keys from localStorage:', error);
+  }
+
+  // Fallback to environment variable
+  const envKey = import.meta.env.VITE_GOOGLE_API_KEY;
+  if (envKey && envKey !== 'demo-key') {
+    console.log('Using Google API key from environment');
+    return envKey;
+  }
+
+  return null;
+}
+
+/**
  * Generate a blog post using Gemini 2.0 Flash with REAL location and weather context
  * @param {Object} params - Blog generation parameters
  * @param {string} params.topic - The main blog topic/notes
@@ -29,13 +58,13 @@ export async function generateBlogWithGemini({
     console.log('Include News:', includeNews);
     console.log('Use Enhanced:', useEnhanced);
 
-    // Check if we have a real API key
-    const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
-    console.log('API Key exists:', !!apiKey && apiKey !== 'demo-key');
+    // Get API key from API Key Manager or environment
+    const apiKey = getGoogleAPIKey();
+    console.log('API Key exists:', !!apiKey);
     console.log('API Key length:', apiKey ? apiKey.length : 0);
     
-    if (!apiKey || apiKey === 'demo-key') {
-      throw new Error('Google Gemini API key not found. Please add your VITE_GOOGLE_API_KEY in the API Key Settings.');
+    if (!apiKey) {
+      throw new Error('Google Gemini API key not found. Please add your Google API key in Settings → API Key Management.');
     }
 
     // Initialize Google Generative AI
