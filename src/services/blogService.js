@@ -1,4 +1,3 @@
-
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
@@ -81,7 +80,7 @@ function formatLocationForTitle(locationData) {
   
   console.log('Formatting location for title:', locationData);
   
-  // Try different location properties
+  // Try different location properties in order of preference
   if (locationData.name) return locationData.name;
   if (locationData.city) return locationData.city;
   if (locationData.address) return locationData.address;
@@ -178,10 +177,11 @@ MISSING INFORMATION HANDLING:
 - Don't invent names, places, or specific details not provided
 
 OUTPUT FORMAT:
-- Return clean HTML with h1 for title, h2 for sections, p for paragraphs
+- Return ONLY clean HTML with h1 for title, h2 for sections, p for paragraphs
+- NO markdown code blocks or formatting - pure HTML only
 - Create engaging titles that capture the day's essence and mood
 - Structure as natural story flow, not a list of activities
-- No markdown - pure HTML only
+- DO NOT wrap the output in \`\`\`html or any other markdown formatting
 
 TITLE FORMAT:
 - Include the formatted date and location in the title
@@ -202,7 +202,7 @@ ROUGH NOTES TO TRANSFORM:
 
 TITLE REQUIREMENTS:
 - Start the title with: "${europeanDate}"
-- Add location if available: "${titleLocation}"
+- Add location if available: "${titleLocation || 'your location'}"
 - Add weather emoji: "${weatherEmoji}"
 - Example format: "${europeanDate} - [Your Story Title]${titleLocation ? ', ' + titleLocation : ''} ${weatherEmoji}"
 
@@ -213,6 +213,7 @@ CRITICAL INSTRUCTIONS:
 - If locations aren't specified, use general terms
 - Work ONLY with the information provided - don't add fictional specifics
 - When details are missing, acknowledge this naturally in the narrative
+- Return ONLY clean HTML - NO markdown code blocks or formatting
 
 `;
 
@@ -265,7 +266,7 @@ Weave these real weather details naturally into the story atmosphere, activities
       userPrompt += `Reference these photos naturally in your storytelling if relevant to the day's events.\n\n`;
     }
 
-    userPrompt += `FINAL REMINDER: Transform the rough notes into a compelling personal story with scenes, emotions, and natural flow. DO NOT invent names, places, or specific details not provided. Work only with what you have been given. Use the real weather and location data to enhance the authenticity and atmosphere of the story.`;
+    userPrompt += `FINAL REMINDER: Transform the rough notes into a compelling personal story with scenes, emotions, and natural flow. DO NOT invent names, places, or specific details not provided. Work only with what you have been given. Use the real weather and location data to enhance the authenticity and atmosphere of the story. Return ONLY clean HTML without any markdown formatting.`;
 
     console.log('Sending prompt to Gemini 2.0 Flash with real context data');
 
@@ -276,7 +277,13 @@ Weave these real weather details naturally into the story atmosphere, activities
     ]);
 
     const response = await result.response;
-    const blogContent = response.text();
+    let blogContent = response.text();
+    
+    // Clean up any potential markdown formatting that might slip through
+    blogContent = blogContent
+      .replace(/```html\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
 
     console.log('Blog post generated successfully with Gemini 2.0 Flash');
     console.log('Generated content preview:', blogContent.substring(0, 200) + '...');

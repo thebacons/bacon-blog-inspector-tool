@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generateBlogWithGemini } from '../services/blogService';
 import { FileText, Sparkles, MapPin, Cloud, Camera, Newspaper, AlertCircle, Download, FileDown, Share2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { getCurrentLocation } from '../services/locationService';
 import mermaid from 'mermaid';
 
 interface BlogGeneratorProps {
@@ -17,11 +17,12 @@ interface BlogGeneratorProps {
   selectedPhotos?: any[];
 }
 
-const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogGeneratorProps) => {
+const BlogGenerator = ({ weatherData, locationData: propLocationData, selectedPhotos = [] }: BlogGeneratorProps) => {
   const [notes, setNotes] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBlog, setGeneratedBlog] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [locationData, setLocationData] = useState(propLocationData);
   
   // Enhancement options state
   const [useEnhancedBlog, setUseEnhancedBlog] = useState(true);
@@ -46,6 +47,26 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
     }
   }, [generatedBlog]);
 
+  // Get location data if not provided
+  useEffect(() => {
+    if (!locationData && includeLocation) {
+      getCurrentLocation().then(location => {
+        console.log('Got location data:', location);
+        setLocationData(location);
+      }).catch(err => {
+        console.error('Failed to get location:', err);
+      });
+    }
+  }, [includeLocation]);
+
+  const stripMarkdownFormatting = (content: string) => {
+    // Remove markdown code blocks and html tags
+    return content
+      .replace(/```html\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
+  };
+
   const handleGenerate = async () => {
     if (!notes.trim()) return;
 
@@ -54,8 +75,8 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
     setGeneratedBlog('');
     
     try {
-      console.log('Location data being passed:', locationData);
-      console.log('Weather data being passed:', weatherData);
+      console.log('Location data being passed:', includeLocation ? locationData : null);
+      console.log('Weather data being passed:', includeWeather ? weatherData : null);
       
       const blog = await generateBlogWithGemini({
         topic: notes,
@@ -65,7 +86,10 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
         includeNews,
         useEnhanced: useEnhancedBlog
       });
-      setGeneratedBlog(blog);
+      
+      // Strip markdown formatting from the generated blog
+      const cleanedBlog = stripMarkdownFormatting(blog);
+      setGeneratedBlog(cleanedBlog);
     } catch (error) {
       console.error('Error generating blog:', error);
       setErrorMessage(error.message || 'Failed to generate blog post. Please try again.');
