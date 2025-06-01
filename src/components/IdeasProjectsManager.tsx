@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,12 @@ import {
   Search,
   Clock,
   DollarSign,
-  AlertTriangle
+  AlertTriangle,
+  ExternalLink,
+  Calendar,
+  Users,
+  BarChart3,
+  Target
 } from 'lucide-react';
 
 interface Task {
@@ -25,6 +29,10 @@ interface Task {
   status: 'pending' | 'in-progress' | 'completed';
   estimatedHours: number;
   priority: 'low' | 'medium' | 'high';
+  assignee?: string;
+  startDate?: string;
+  endDate?: string;
+  dependencies?: string[];
 }
 
 interface BOMItem {
@@ -39,6 +47,7 @@ interface BOMItem {
 
 interface Project {
   id: string;
+  projectId: string; // Unique identifier for external integration
   title: string;
   description: string;
   status: 'idea' | 'planning' | 'active' | 'completed' | 'paused';
@@ -46,8 +55,14 @@ interface Project {
   tasks: Task[];
   billOfMaterials: BOMItem[];
   estimatedBudget: number;
+  startDate?: string;
+  endDate?: string;
+  targetDate?: string;
+  assignedTeam?: string[];
+  progressPercentage: number;
   createdDate: string;
   lastUpdated: string;
+  lastSyncDate?: string;
 }
 
 interface Idea {
@@ -77,19 +92,34 @@ const IdeasProjectsManager = () => {
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Load existing projects - this would integrate with your backend
     loadExistingProjects();
   }, []);
 
+  const generateProjectId = (): string => {
+    return `PM-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+
+  const calculateProgress = (tasks: Task[]): number => {
+    if (tasks.length === 0) return 0;
+    const completedTasks = tasks.filter(task => task.status === 'completed').length;
+    return Math.round((completedTasks / tasks.length) * 100);
+  };
+
   const loadExistingProjects = async () => {
-    // Mock existing projects
+    // Mock existing projects with enhanced metadata
     const mockProjects: Project[] = [
       {
         id: '1',
+        projectId: generateProjectId(),
         title: 'Smart Home Automation',
         description: 'Automate lighting and temperature control',
         status: 'active',
         category: 'Technology',
+        startDate: '2024-05-15',
+        endDate: '2024-07-15',
+        targetDate: '2024-06-30',
+        assignedTeam: ['john.doe@email.com', 'jane.smith@email.com'],
+        progressPercentage: 0,
         tasks: [
           {
             id: '1-1',
@@ -97,7 +127,10 @@ const IdeasProjectsManager = () => {
             description: 'Compare different smart switch brands and compatibility',
             status: 'completed',
             estimatedHours: 4,
-            priority: 'medium'
+            priority: 'medium',
+            assignee: 'john.doe@email.com',
+            startDate: '2024-05-15',
+            endDate: '2024-05-17'
           },
           {
             id: '1-2',
@@ -105,7 +138,10 @@ const IdeasProjectsManager = () => {
             description: 'Replace existing thermostat with smart model',
             status: 'in-progress',
             estimatedHours: 6,
-            priority: 'high'
+            priority: 'high',
+            assignee: 'jane.smith@email.com',
+            startDate: '2024-05-20',
+            dependencies: ['1-1']
           }
         ],
         billOfMaterials: [
@@ -128,10 +164,18 @@ const IdeasProjectsManager = () => {
         ],
         estimatedBudget: 530,
         createdDate: '2024-05-15',
-        lastUpdated: '2024-06-01'
+        lastUpdated: '2024-06-01',
+        lastSyncDate: '2024-06-01'
       }
     ];
-    setProjects(mockProjects);
+    
+    // Calculate progress for each project
+    const projectsWithProgress = mockProjects.map(project => ({
+      ...project,
+      progressPercentage: calculateProgress(project.tasks)
+    }));
+    
+    setProjects(projectsWithProgress);
   };
 
   const analyzeIdea = async () => {
@@ -139,7 +183,6 @@ const IdeasProjectsManager = () => {
 
     setAnalyzing(true);
     
-    // Simulate AI analysis
     setTimeout(() => {
       const analyzedIdea: Idea = {
         id: Date.now().toString(),
@@ -171,13 +214,11 @@ const IdeasProjectsManager = () => {
   };
 
   const extractIdeaTitle = (description: string): string => {
-    // Simple title extraction - in real implementation, this would use AI
     const words = description.split(' ').slice(0, 6);
     return words.join(' ') + (description.split(' ').length > 6 ? '...' : '');
   };
 
   const determineCategory = (description: string): string => {
-    // Simple categorization - in real implementation, this would use AI
     const techKeywords = ['app', 'software', 'code', 'automation', 'smart'];
     const homeKeywords = ['home', 'garden', 'diy', 'repair', 'build'];
     
@@ -188,7 +229,6 @@ const IdeasProjectsManager = () => {
   };
 
   const findMatchingProjects = (description: string): string[] => {
-    // Find projects that might be related to this idea
     return projects
       .filter(project => 
         project.title.toLowerCase().includes(description.toLowerCase().split(' ')[0]) ||
@@ -198,7 +238,6 @@ const IdeasProjectsManager = () => {
   };
 
   const generateTasks = (description: string): Task[] => {
-    // Mock task generation - in real implementation, this would use AI
     return [
       {
         id: `task-${Date.now()}-1`,
@@ -214,7 +253,8 @@ const IdeasProjectsManager = () => {
         description: 'Create a basic working prototype',
         status: 'pending',
         estimatedHours: 16,
-        priority: 'medium'
+        priority: 'medium',
+        dependencies: [`task-${Date.now()}-1`]
       },
       {
         id: `task-${Date.now()}-3`,
@@ -222,13 +262,13 @@ const IdeasProjectsManager = () => {
         description: 'Test functionality and make improvements',
         status: 'pending',
         estimatedHours: 12,
-        priority: 'medium'
+        priority: 'medium',
+        dependencies: [`task-${Date.now()}-2`]
       }
     ];
   };
 
   const generateBOM = (description: string): BOMItem[] => {
-    // Mock BOM generation - in real implementation, this would use AI
     return [
       {
         id: `bom-${Date.now()}-1`,
@@ -260,6 +300,7 @@ const IdeasProjectsManager = () => {
   const promoteIdeaToProject = (idea: Idea) => {
     const newProject: Project = {
       id: Date.now().toString(),
+      projectId: generateProjectId(),
       title: idea.title,
       description: idea.description,
       status: 'planning',
@@ -267,12 +308,40 @@ const IdeasProjectsManager = () => {
       tasks: idea.generatedTasks,
       billOfMaterials: idea.generatedBOM,
       estimatedBudget: idea.aiAnalysis.estimatedCost,
+      progressPercentage: 0,
       createdDate: new Date().toISOString(),
       lastUpdated: new Date().toISOString()
     };
 
     setProjects(prev => [newProject, ...prev]);
     setIdeas(prev => prev.filter(i => i.id !== idea.id));
+  };
+
+  const handleOpenInProjectManager = (projectId: string) => {
+    console.log(`Opening project ${projectId} in full Project Manager`);
+    // Future: window.open(`/project-manager/project/${projectId}`, '_blank');
+  };
+
+  const handleSyncWithExternalPM = (projectId: string) => {
+    console.log(`Syncing project ${projectId} with external PM tools`);
+    // Future: API call to sync with Google Tasks, MS Planner, etc.
+  };
+
+  const handleExportProject = (project: Project) => {
+    const exportData = {
+      ...project,
+      exportDate: new Date().toISOString(),
+      format: 'AutoBlog-PM-v1.0'
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `project-${project.projectId}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const getStatusColor = (status: string) => {
@@ -292,6 +361,13 @@ const IdeasProjectsManager = () => {
       case 'low': return 'text-green-600';
       default: return 'text-gray-600';
     }
+  };
+
+  const getProgressColor = (progress: number) => {
+    if (progress >= 80) return 'bg-green-500';
+    if (progress >= 50) return 'bg-blue-500';
+    if (progress >= 25) return 'bg-yellow-500';
+    return 'bg-gray-300';
   };
 
   const filteredIdeas = ideas.filter(idea => 
@@ -340,6 +416,35 @@ const IdeasProjectsManager = () => {
               </div>
             )}
           </Button>
+        </CardContent>
+      </Card>
+
+      {/* Integration Placeholder */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-dashed">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2 text-sm">
+            <ExternalLink className="h-4 w-4" />
+            <span>Project Management Integration</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" disabled>
+              <Users className="h-4 w-4 mr-2" />
+              Connect Google Tasks
+            </Button>
+            <Button variant="outline" size="sm" disabled>
+              <BarChart3 className="h-4 w-4 mr-2" />
+              MS Planner Integration
+            </Button>
+            <Button variant="outline" size="sm" disabled>
+              <Target className="h-4 w-4 mr-2" />
+              Open Full PM App
+            </Button>
+          </div>
+          <p className="text-sm text-gray-600 mt-2">
+            Future integration with comprehensive project management tools
+          </p>
         </CardContent>
       </Card>
 
@@ -490,10 +595,37 @@ const IdeasProjectsManager = () => {
                     <div className="flex items-center space-x-2 mt-2">
                       <Badge variant="outline">{project.category}</Badge>
                       <Badge variant="outline">${project.estimatedBudget} budget</Badge>
-                      <span className="text-xs text-gray-500">
-                        Updated {new Date(project.lastUpdated).toLocaleDateString()}
-                      </span>
+                      <Badge variant="outline">ID: {project.projectId}</Badge>
+                      {project.targetDate && (
+                        <Badge variant="outline" className="flex items-center space-x-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>Due: {new Date(project.targetDate).toLocaleDateString()}</span>
+                        </Badge>
+                      )}
                     </div>
+                  </div>
+                  <div className="flex flex-col space-y-2">
+                    <Button size="sm" variant="outline" onClick={() => handleOpenInProjectManager(project.projectId)}>
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Open in PM
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={() => handleExportProject(project)}>
+                      Export
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Progress</span>
+                    <span>{project.progressPercentage}%</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${getProgressColor(project.progressPercentage)}`}
+                      style={{ width: `${project.progressPercentage}%` }}
+                    ></div>
                   </div>
                 </div>
 
@@ -507,12 +639,19 @@ const IdeasProjectsManager = () => {
                           <span className={task.status === 'completed' ? 'line-through text-gray-500' : ''}>
                             {task.title}
                           </span>
-                          <Badge 
-                            variant={task.status === 'completed' ? 'default' : 'outline'}
-                            className="text-xs capitalize"
-                          >
-                            {task.status}
-                          </Badge>
+                          <div className="flex items-center space-x-2">
+                            {task.assignee && (
+                              <Badge variant="outline" className="text-xs">
+                                {task.assignee.split('@')[0]}
+                              </Badge>
+                            )}
+                            <Badge 
+                              variant={task.status === 'completed' ? 'default' : 'outline'}
+                              className="text-xs capitalize"
+                            >
+                              {task.status}
+                            </Badge>
+                          </div>
                         </div>
                       ))}
                       {project.tasks.length > 3 && (
@@ -523,23 +662,52 @@ const IdeasProjectsManager = () => {
                     </div>
                   </div>
 
-                  {/* Materials Overview */}
+                  {/* Timeline & Team */}
                   <div>
-                    <h4 className="font-medium mb-2">Materials Overview</h4>
-                    <div className="space-y-1">
-                      {project.billOfMaterials.slice(0, 3).map((item) => (
-                        <div key={item.id} className="flex items-center justify-between text-sm">
-                          <span>{item.name}</span>
-                          <span className="text-gray-500">${item.estimatedCost * item.quantity}</span>
+                    <h4 className="font-medium mb-2">Timeline & Team</h4>
+                    <div className="space-y-1 text-sm">
+                      {project.startDate && (
+                        <div className="flex items-center justify-between">
+                          <span>Start:</span>
+                          <span className="text-gray-600">{new Date(project.startDate).toLocaleDateString()}</span>
                         </div>
-                      ))}
-                      {project.billOfMaterials.length > 3 && (
-                        <div className="text-xs text-gray-500">
-                          +{project.billOfMaterials.length - 3} more items
+                      )}
+                      {project.endDate && (
+                        <div className="flex items-center justify-between">
+                          <span>End:</span>
+                          <span className="text-gray-600">{new Date(project.endDate).toLocaleDateString()}</span>
+                        </div>
+                      )}
+                      {project.assignedTeam && project.assignedTeam.length > 0 && (
+                        <div className="flex items-center justify-between">
+                          <span>Team:</span>
+                          <span className="text-gray-600">{project.assignedTeam.length} members</span>
+                        </div>
+                      )}
+                      {project.lastSyncDate && (
+                        <div className="flex items-center justify-between">
+                          <span>Last Sync:</span>
+                          <span className="text-gray-600">{new Date(project.lastSyncDate).toLocaleDateString()}</span>
                         </div>
                       )}
                     </div>
                   </div>
+                </div>
+
+                {/* Integration Actions */}
+                <div className="flex items-center space-x-2 pt-2 border-t">
+                  <Button size="sm" variant="ghost" onClick={() => handleSyncWithExternalPM(project.projectId)}>
+                    <BarChart3 className="h-4 w-4 mr-1" />
+                    Sync
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled>
+                    <Users className="h-4 w-4 mr-1" />
+                    Share
+                  </Button>
+                  <Button size="sm" variant="ghost" disabled>
+                    <Target className="h-4 w-4 mr-1" />
+                    Roadmap
+                  </Button>
                 </div>
               </div>
             ))}
