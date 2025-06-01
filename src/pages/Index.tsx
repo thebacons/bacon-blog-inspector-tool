@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PhotoPreview from "@/components/PhotoPreview";
 import LocationTracker from "@/components/LocationTracker";
 import WeatherForecast from "@/components/WeatherForecast";
+import IdeasProjectsManager from "@/components/IdeasProjectsManager";
 import { 
   Sparkles, 
   Settings,
@@ -18,7 +18,8 @@ import {
   Image,
   TrendingUp,
   Eye,
-  Plus
+  Plus,
+  Lightbulb
 } from 'lucide-react';
 
 const Index = () => {
@@ -165,10 +166,11 @@ const Index = () => {
 
             {/* Enhanced Data Sources Tabs */}
             <Tabs defaultValue="photos" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="photos">Photos & Memories</TabsTrigger>
                 <TabsTrigger value="location">Location & Travel</TabsTrigger>
                 <TabsTrigger value="weather">Weather & Environment</TabsTrigger>
+                <TabsTrigger value="ideas">Ideas & Projects</TabsTrigger>
               </TabsList>
               
               <TabsContent value="photos" className="space-y-4">
@@ -181,6 +183,10 @@ const Index = () => {
               
               <TabsContent value="weather" className="space-y-4">
                 <WeatherForecast location={currentLocation} />
+              </TabsContent>
+
+              <TabsContent value="ideas" className="space-y-4">
+                <IdeasProjectsManager />
               </TabsContent>
             </Tabs>
 
@@ -312,6 +318,14 @@ const Index = () => {
                     <span className="text-sm font-medium">🌤️ Weather</span>
                   </div>
                   <Badge variant="secondary">22°C</Badge>
+                </div>
+
+                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50">
+                  <div className="flex items-center space-x-2">
+                    <Lightbulb className="h-4 w-4 text-purple-600" />
+                    <span className="text-sm font-medium">Ideas</span>
+                  </div>
+                  <Badge variant="secondary">3 active</Badge>
                 </div>
               </CardContent>
             </Card>
