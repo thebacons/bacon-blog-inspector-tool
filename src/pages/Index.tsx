@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+
+import React, { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,42 @@ import { format } from "date-fns";
 import IdeasProjectsManager from "../components/IdeasProjectsManager";
 import MCPServerManager from "../components/MCPServerManager";
 
+interface WeatherData {
+  location: string;
+  temperature: number;
+  unit: string;
+  conditions: string;
+  humidity: number;
+  windSpeed: number;
+  feelsLike: number;
+  forecast: Array<{
+    day: string;
+    high: number;
+    low: number;
+    conditions: string;
+  }>;
+}
+
+interface LocationData {
+  name: string;
+  latitude: number;
+  longitude: number;
+  country: string;
+  timezone: string;
+}
+
+interface PhotoData {
+  id: string;
+  url: string;
+  title: string;
+  date: string;
+  analysis: {
+    description: string;
+    location: { locationName: string };
+    tags: string[];
+  };
+}
+
 const Index = () => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("blog");
@@ -27,9 +64,9 @@ const Index = () => {
   const [includePhotos, setIncludePhotos] = useState(true);
   const [includeLocation, setIncludeLocation] = useState(true);
   const [includeNews, setIncludeNews] = useState(false);
-  const [weatherData, setWeatherData] = useState(null);
-  const [locationData, setLocationData] = useState(null);
-  const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [selectedPhotos, setSelectedPhotos] = useState<PhotoData[]>([]);
   const [newsTopics, setNewsTopics] = useState("");
 
   const handleGenerateBlog = async () => {
@@ -68,7 +105,7 @@ const Index = () => {
     }
   };
 
-  const fetchWeatherData = async () => {
+  const fetchWeatherData = async (): Promise<WeatherData> => {
     // Mock weather data
     return {
       location: "San Francisco, CA",
@@ -86,7 +123,7 @@ const Index = () => {
     };
   };
 
-  const fetchLocationData = async () => {
+  const fetchLocationData = async (): Promise<LocationData> => {
     // Mock location data
     return {
       name: "San Francisco, CA",
@@ -97,7 +134,7 @@ const Index = () => {
     };
   };
 
-  const fetchPhotos = async () => {
+  const fetchPhotos = async (): Promise<PhotoData[]> => {
     // Mock photos data
     return [
       {
@@ -145,18 +182,30 @@ const Index = () => {
   const { data: weather, isLoading: isLoadingWeather } = useQuery({
     queryKey: ["weather"],
     queryFn: fetchWeatherData,
-    enabled: includeWeather,
-    onSuccess: (data) => setWeatherData(data)
+    enabled: includeWeather
   });
 
   const { data: location, isLoading: isLoadingLocation } = useQuery({
     queryKey: ["location"],
     queryFn: fetchLocationData,
-    enabled: includeLocation,
-    onSuccess: (data) => setLocationData(data)
+    enabled: includeLocation
   });
 
-  const handlePhotoSelect = (photo) => {
+  // Handle weather data updates
+  useEffect(() => {
+    if (weather) {
+      setWeatherData(weather);
+    }
+  }, [weather]);
+
+  // Handle location data updates
+  useEffect(() => {
+    if (location) {
+      setLocationData(location);
+    }
+  }, [location]);
+
+  const handlePhotoSelect = (photo: PhotoData) => {
     if (selectedPhotos.some(p => p.id === photo.id)) {
       setSelectedPhotos(selectedPhotos.filter(p => p.id !== photo.id));
     } else {
@@ -164,7 +213,7 @@ const Index = () => {
     }
   };
 
-  const getWeatherIcon = (condition) => {
+  const getWeatherIcon = (condition: string) => {
     const conditionLower = condition.toLowerCase();
     if (conditionLower.includes("sunny") || conditionLower.includes("clear")) return <Sun className="h-6 w-6 text-yellow-500" />;
     if (conditionLower.includes("rain")) return <CloudRain className="h-6 w-6 text-blue-500" />;
@@ -351,31 +400,31 @@ const Index = () => {
                         <div className="flex justify-center py-4">
                           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                         </div>
-                      ) : weather ? (
+                      ) : weatherData ? (
                         <div className="space-y-4">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm text-gray-500">{weather.location}</p>
+                              <p className="text-sm text-gray-500">{weatherData.location}</p>
                               <div className="flex items-center">
-                                {getWeatherIcon(weather.conditions)}
+                                {getWeatherIcon(weatherData.conditions)}
                                 <span className="text-2xl font-bold ml-2">
-                                  {weather.temperature}{weather.unit}
+                                  {weatherData.temperature}{weatherData.unit}
                                 </span>
                               </div>
-                              <p className="text-sm">{weather.conditions}</p>
+                              <p className="text-sm">{weatherData.conditions}</p>
                             </div>
                             <div className="text-right">
                               <div className="flex items-center justify-end space-x-1 text-sm text-gray-500">
                                 <Thermometer className="h-4 w-4" />
-                                <span>Feels like {weather.feelsLike}{weather.unit}</span>
+                                <span>Feels like {weatherData.feelsLike}{weatherData.unit}</span>
                               </div>
                               <div className="flex items-center justify-end space-x-1 text-sm text-gray-500">
                                 <Wind className="h-4 w-4" />
-                                <span>{weather.windSpeed} km/h</span>
+                                <span>{weatherData.windSpeed} km/h</span>
                               </div>
                               <div className="flex items-center justify-end space-x-1 text-sm text-gray-500">
                                 <Droplets className="h-4 w-4" />
-                                <span>{weather.humidity}%</span>
+                                <span>{weatherData.humidity}%</span>
                               </div>
                             </div>
                           </div>
@@ -385,7 +434,7 @@ const Index = () => {
                           <div className="space-y-2">
                             <h4 className="text-sm font-medium">Forecast</h4>
                             <div className="grid grid-cols-3 gap-2">
-                              {weather.forecast.map((day, i) => (
+                              {weatherData.forecast.map((day, i) => (
                                 <div key={i} className="text-center p-2 bg-gray-50 rounded">
                                   <p className="text-xs font-medium">{day.day}</p>
                                   <div className="my-1">
@@ -422,15 +471,15 @@ const Index = () => {
                         <div className="flex justify-center py-4">
                           <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
                         </div>
-                      ) : location ? (
+                      ) : locationData ? (
                         <div className="space-y-2">
-                          <p className="font-medium">{location.name}</p>
-                          <p className="text-sm text-gray-500">{location.country}</p>
+                          <p className="font-medium">{locationData.name}</p>
+                          <p className="text-sm text-gray-500">{locationData.country}</p>
                           <p className="text-sm text-gray-500">
-                            {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                            {locationData.latitude.toFixed(4)}, {locationData.longitude.toFixed(4)}
                           </p>
                           <p className="text-sm text-gray-500">
-                            Timezone: {location.timezone}
+                            Timezone: {locationData.timezone}
                           </p>
                         </div>
                       ) : (

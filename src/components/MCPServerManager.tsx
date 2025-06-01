@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -387,7 +386,6 @@ const ServerCard: React.FC<{
             <Switch
               checked={server.isEnabled}
               onCheckedChange={() => onToggle(server.id)}
-              size="sm"
             />
           </div>
         </div>
