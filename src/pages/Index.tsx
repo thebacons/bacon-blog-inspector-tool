@@ -1,358 +1,545 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import React, { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import PhotoPreview from "@/components/PhotoPreview";
-import LocationTracker from "@/components/LocationTracker";
-import WeatherForecast from "@/components/WeatherForecast";
-import IdeasProjectsManager from "@/components/IdeasProjectsManager";
-import { 
-  Sparkles, 
-  Settings,
-  User,
-  MessageSquare,
-  Image,
-  TrendingUp,
-  Eye,
-  Plus,
-  Lightbulb
-} from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/components/ui/use-toast";
+import { Toaster } from "@/components/ui/toaster";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Loader2, Send, CloudSun, Image as ImageIcon, RefreshCw, MapPin, Calendar, Thermometer, Wind, Droplets, Sun, CloudRain, CloudLightning, CloudSnow, CloudDrizzle, CloudFog, CloudOff, Sunrise, Sunset, Umbrella, Zap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import IdeasProjectsManager from "../components/IdeasProjectsManager";
+import MCPServerManager from "../components/MCPServerManager";
 
 const Index = () => {
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("blog");
+  const [blogTopic, setBlogTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [userNotes, setUserNotes] = useState('');
-  const [selectedPhotos, setSelectedPhotos] = useState<any[]>([]);
-  const [currentLocation, setCurrentLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [autoSources, setAutoSources] = useState({
-    photos: true,
-    weather: true,
-    location: true,
-    tasks: false
-  });
-
-  const recentBlogs = [
-    {
-      id: 1,
-      title: "Perfect Sunday in Aachen",
-      date: "2024-05-31",
-      snippet: "Bike ride to the market, delicious bacon and eggs...",
-      sources: ["📸 5 photos", "🌤️ Weather", "📍 Aachen"],
-      views: 12
-    },
-    {
-      id: 2,
-      title: "Productive Week Recap",
-      date: "2024-05-30",
-      snippet: "Gym session, lawn care, and some great meetings...",
-      sources: ["📸 3 photos", "🌧️ Weather", "📍 Home"],
-      views: 8
-    }
-  ];
+  const [generatedBlog, setGeneratedBlog] = useState("");
+  const [useEnhancedBlog, setUseEnhancedBlog] = useState(true);
+  const [includeWeather, setIncludeWeather] = useState(true);
+  const [includePhotos, setIncludePhotos] = useState(true);
+  const [includeLocation, setIncludeLocation] = useState(true);
+  const [includeNews, setIncludeNews] = useState(false);
+  const [weatherData, setWeatherData] = useState(null);
+  const [locationData, setLocationData] = useState(null);
+  const [selectedPhotos, setSelectedPhotos] = useState([]);
+  const [newsTopics, setNewsTopics] = useState("");
 
   const handleGenerateBlog = async () => {
-    setIsGenerating(true);
-    // This will integrate with the MCP orchestrator
-    console.log('Generating blog with:', {
-      notes: userNotes,
-      photos: selectedPhotos,
-      location: currentLocation,
-      autoSources
-    });
-    setTimeout(() => setIsGenerating(false), 3000);
-  };
-
-  const handlePhotoSelection = (photos: any[]) => {
-    setSelectedPhotos(photos);
-  };
-
-  // Extract photo locations for the location tracker
-  const photoLocations = selectedPhotos
-    .filter(photo => photo.location)
-    .map(photo => ({
-      latitude: photo.location.latitude,
-      longitude: photo.location.longitude,
-      timestamp: photo.timestamp,
-      name: photo.location.name,
-      source: 'photo' as const
-    }));
-
-  React.useEffect(() => {
-    // Get current location
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setCurrentLocation({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        },
-        (error) => console.error('Location error:', error)
-      );
+    if (!blogTopic.trim()) {
+      toast({
+        title: "Topic Required",
+        description: "Please enter a blog topic to generate content.",
+        variant: "destructive",
+      });
+      return;
     }
-  }, []);
+
+    setIsGenerating(true);
+    setGeneratedBlog("");
+
+    try {
+      // Simulate API call with a timeout
+      setTimeout(() => {
+        const mockBlog = `# ${blogTopic}\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl.\n\n## Section 1\n\nNullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl.\n\n## Section 2\n\nNullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl.`;
+        
+        setGeneratedBlog(mockBlog);
+        setIsGenerating(false);
+        
+        toast({
+          title: "Blog Generated",
+          description: "Your blog post has been generated successfully!",
+        });
+      }, 2000);
+    } catch (error) {
+      toast({
+        title: "Generation Failed",
+        description: error.message || "Failed to generate blog content. Please try again.",
+        variant: "destructive",
+      });
+      setIsGenerating(false);
+    }
+  };
+
+  const fetchWeatherData = async () => {
+    // Mock weather data
+    return {
+      location: "San Francisco, CA",
+      temperature: 18,
+      unit: "°C",
+      conditions: "Partly Cloudy",
+      humidity: 65,
+      windSpeed: 12,
+      feelsLike: 17,
+      forecast: [
+        { day: "Today", high: 19, low: 14, conditions: "Partly Cloudy" },
+        { day: "Tomorrow", high: 21, low: 15, conditions: "Sunny" },
+        { day: "Wednesday", high: 20, low: 14, conditions: "Cloudy" }
+      ]
+    };
+  };
+
+  const fetchLocationData = async () => {
+    // Mock location data
+    return {
+      name: "San Francisco, CA",
+      latitude: 37.7749,
+      longitude: -122.4194,
+      country: "United States",
+      timezone: "America/Los_Angeles"
+    };
+  };
+
+  const fetchPhotos = async () => {
+    // Mock photos data
+    return [
+      {
+        id: "1",
+        url: "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b",
+        title: "City Skyline",
+        date: "2023-05-15",
+        analysis: {
+          description: "A beautiful city skyline at sunset",
+          location: { locationName: "Downtown" },
+          tags: ["city", "skyline", "sunset", "urban"]
+        }
+      },
+      {
+        id: "2",
+        url: "https://images.unsplash.com/photo-1501785888041-af3ef285b470",
+        title: "Mountain Landscape",
+        date: "2023-05-10",
+        analysis: {
+          description: "Mountain range with snow caps",
+          location: { locationName: "Mountain Range" },
+          tags: ["mountains", "nature", "landscape", "snow"]
+        }
+      },
+      {
+        id: "3",
+        url: "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1",
+        title: "Beach Sunset",
+        date: "2023-05-05",
+        analysis: {
+          description: "Sunset view at the beach",
+          location: { locationName: "Ocean Beach" },
+          tags: ["beach", "sunset", "ocean", "waves"]
+        }
+      }
+    ];
+  };
+
+  const { data: photos = [], isLoading: isLoadingPhotos } = useQuery({
+    queryKey: ["photos"],
+    queryFn: fetchPhotos,
+    enabled: includePhotos
+  });
+
+  const { data: weather, isLoading: isLoadingWeather } = useQuery({
+    queryKey: ["weather"],
+    queryFn: fetchWeatherData,
+    enabled: includeWeather,
+    onSuccess: (data) => setWeatherData(data)
+  });
+
+  const { data: location, isLoading: isLoadingLocation } = useQuery({
+    queryKey: ["location"],
+    queryFn: fetchLocationData,
+    enabled: includeLocation,
+    onSuccess: (data) => setLocationData(data)
+  });
+
+  const handlePhotoSelect = (photo) => {
+    if (selectedPhotos.some(p => p.id === photo.id)) {
+      setSelectedPhotos(selectedPhotos.filter(p => p.id !== photo.id));
+    } else {
+      setSelectedPhotos([...selectedPhotos, photo]);
+    }
+  };
+
+  const getWeatherIcon = (condition) => {
+    const conditionLower = condition.toLowerCase();
+    if (conditionLower.includes("sunny") || conditionLower.includes("clear")) return <Sun className="h-6 w-6 text-yellow-500" />;
+    if (conditionLower.includes("rain")) return <CloudRain className="h-6 w-6 text-blue-500" />;
+    if (conditionLower.includes("thunder") || conditionLower.includes("lightning")) return <CloudLightning className="h-6 w-6 text-purple-500" />;
+    if (conditionLower.includes("snow")) return <CloudSnow className="h-6 w-6 text-blue-200" />;
+    if (conditionLower.includes("drizzle")) return <CloudDrizzle className="h-6 w-6 text-blue-400" />;
+    if (conditionLower.includes("fog") || conditionLower.includes("mist")) return <CloudFog className="h-6 w-6 text-gray-400" />;
+    if (conditionLower.includes("cloud")) return <CloudSun className="h-6 w-6 text-gray-500" />;
+    return <CloudOff className="h-6 w-6 text-gray-500" />;
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Sparkles className="h-8 w-8 text-blue-600" />
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              AutoBlog AI
-            </h1>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Button>
-            <Button variant="ghost" size="sm">
-              <User className="h-4 w-4 mr-2" />
-              Profile
-            </Button>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      <header className="bg-white shadow">
+        <div className="container mx-auto px-4 py-6">
+          <h1 className="text-2xl font-bold text-gray-900">Auto Blog Platform</h1>
+          <p className="text-gray-600">Generate enhanced blog posts with AI</p>
         </div>
       </header>
+      
+      <main className="container mx-auto px-4 py-8">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="blog">Auto Blog</TabsTrigger>
+            <TabsTrigger value="ideas">Ideas & Projects</TabsTrigger>
+            <TabsTrigger value="mcp">MCP Servers</TabsTrigger>
+            <TabsTrigger value="weather">Weather</TabsTrigger>
+            <TabsTrigger value="photos">Photos</TabsTrigger>
+          </TabsList>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
-            
-            {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-4">
-              <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm opacity-90">Blogs Created</p>
-                      <p className="text-2xl font-bold">23</p>
+          <TabsContent value="blog" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2 space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Generate Blog Post</CardTitle>
+                    <CardDescription>Enter a topic or idea to generate a blog post</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="topic">Blog Topic</Label>
+                      <Textarea
+                        id="topic"
+                        placeholder="Enter your blog topic or idea here..."
+                        value={blogTopic}
+                        onChange={(e) => setBlogTopic(e.target.value)}
+                        className="min-h-[100px]"
+                      />
                     </div>
-                    <MessageSquare className="h-8 w-8 opacity-80" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm opacity-90">Photos Used</p>
-                      <p className="text-2xl font-bold">127</p>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="enhanced-blog">Use Enhanced Blog</Label>
+                        <Switch
+                          id="enhanced-blog"
+                          checked={useEnhancedBlog}
+                          onCheckedChange={setUseEnhancedBlog}
+                        />
+                      </div>
+                      <p className="text-sm text-gray-500">
+                        Enhanced blogs include contextual information like weather, location, and photos
+                      </p>
                     </div>
-                    <Image className="h-8 w-8 opacity-80" />
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm opacity-90">Total Views</p>
-                      <p className="text-2xl font-bold">1.2k</p>
-                    </div>
-                    <TrendingUp className="h-8 w-8 opacity-80" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
 
-            {/* Enhanced Data Sources Tabs */}
-            <Tabs defaultValue="photos" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="photos">Photos & Memories</TabsTrigger>
-                <TabsTrigger value="location">Location & Travel</TabsTrigger>
-                <TabsTrigger value="weather">Weather & Environment</TabsTrigger>
-                <TabsTrigger value="ideas">Ideas & Projects</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="photos" className="space-y-4">
-                <PhotoPreview onSelectionChange={handlePhotoSelection} />
-              </TabsContent>
-              
-              <TabsContent value="location" className="space-y-4">
-                <LocationTracker photoLocations={photoLocations} />
-              </TabsContent>
-              
-              <TabsContent value="weather" className="space-y-4">
-                <WeatherForecast location={currentLocation} />
-              </TabsContent>
+                    {useEnhancedBlog && (
+                      <div className="space-y-4 p-4 bg-gray-50 rounded-md">
+                        <h3 className="font-medium">Enhancement Options</h3>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="include-weather"
+                              checked={includeWeather}
+                              onCheckedChange={setIncludeWeather}
+                            />
+                            <Label htmlFor="include-weather">Include Weather</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="include-location"
+                              checked={includeLocation}
+                              onCheckedChange={setIncludeLocation}
+                            />
+                            <Label htmlFor="include-location">Include Location</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="include-photos"
+                              checked={includePhotos}
+                              onCheckedChange={setIncludePhotos}
+                            />
+                            <Label htmlFor="include-photos">Include Photos</Label>
+                          </div>
+                          
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              id="include-news"
+                              checked={includeNews}
+                              onCheckedChange={setIncludeNews}
+                            />
+                            <Label htmlFor="include-news">Include News</Label>
+                          </div>
+                        </div>
 
-              <TabsContent value="ideas" className="space-y-4">
-                <IdeasProjectsManager />
-              </TabsContent>
-            </Tabs>
+                        {includeNews && (
+                          <div className="space-y-2">
+                            <Label htmlFor="news-topics">News Topics (comma separated)</Label>
+                            <Input
+                              id="news-topics"
+                              placeholder="technology, science, health"
+                              value={newsTopics}
+                              onChange={(e) => setNewsTopics(e.target.value)}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      onClick={handleGenerateBlog} 
+                      disabled={isGenerating || !blogTopic.trim()}
+                      className="w-full"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Generate Blog
+                        </>
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
 
-            {/* Blog Generator */}
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
-                  <Sparkles className="h-5 w-5 text-blue-600" />
-                  <span>Generate Your Daily Blog</span>
-                </CardTitle>
-                <CardDescription>
-                  Add your notes and let AI create a beautiful story from your day
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                
-                {/* Auto Sources */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold text-sm uppercase tracking-wide text-gray-600">
-                    Include in Blog
-                  </h3>
-                  <div className="flex flex-wrap gap-3">
-                    <Badge variant={autoSources.photos ? "default" : "outline"} className="cursor-pointer">
-                      📸 {selectedPhotos.length} Photos Selected
-                    </Badge>
-                    <Badge variant={autoSources.weather ? "default" : "outline"} className="cursor-pointer">
-                      🌤️ Weather & Astronomy
-                    </Badge>
-                    <Badge variant={autoSources.location ? "default" : "outline"} className="cursor-pointer">
-                      📍 {photoLocations.length} Locations
-                    </Badge>
-                  </div>
-                </div>
+                {generatedBlog && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Generated Blog Post</CardTitle>
+                      <CardDescription>
+                        {format(new Date(), "MMMM d, yyyy")}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="prose max-w-none">
+                        {generatedBlog.split('\n').map((line, i) => {
+                          if (line.startsWith('# ')) {
+                            return <h1 key={i} className="text-2xl font-bold mt-4 mb-2">{line.substring(2)}</h1>;
+                          } else if (line.startsWith('## ')) {
+                            return <h2 key={i} className="text-xl font-bold mt-4 mb-2">{line.substring(3)}</h2>;
+                          } else if (line.trim() === '') {
+                            return <br key={i} />;
+                          } else {
+                            return <p key={i} className="mb-2">{line}</p>;
+                          }
+                        })}
+                      </div>
+                    </CardContent>
+                    <CardFooter className="flex justify-between">
+                      <Button variant="outline">Copy to Clipboard</Button>
+                      <Button variant="outline">Download as Markdown</Button>
+                    </CardFooter>
+                  </Card>
+                )}
+              </div>
 
-                {/* User Notes */}
-                <div className="space-y-2">
-                  <Label htmlFor="notes" className="font-semibold">Your Day Notes</Label>
-                  <Textarea
-                    id="notes"
-                    placeholder="went to gym, took bike, nice ride, cut lawn, bacon and eggs for lunch..."
-                    value={userNotes}
-                    onChange={(e) => setUserNotes(e.target.value)}
-                    className="min-h-[120px] resize-none"
-                  />
-                </div>
+              <div className="space-y-6">
+                {useEnhancedBlog && includeWeather && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <CloudSun className="mr-2 h-5 w-5" />
+                        Weather Data
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoadingWeather ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                        </div>
+                      ) : weather ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm text-gray-500">{weather.location}</p>
+                              <div className="flex items-center">
+                                {getWeatherIcon(weather.conditions)}
+                                <span className="text-2xl font-bold ml-2">
+                                  {weather.temperature}{weather.unit}
+                                </span>
+                              </div>
+                              <p className="text-sm">{weather.conditions}</p>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center justify-end space-x-1 text-sm text-gray-500">
+                                <Thermometer className="h-4 w-4" />
+                                <span>Feels like {weather.feelsLike}{weather.unit}</span>
+                              </div>
+                              <div className="flex items-center justify-end space-x-1 text-sm text-gray-500">
+                                <Wind className="h-4 w-4" />
+                                <span>{weather.windSpeed} km/h</span>
+                              </div>
+                              <div className="flex items-center justify-end space-x-1 text-sm text-gray-500">
+                                <Droplets className="h-4 w-4" />
+                                <span>{weather.humidity}%</span>
+                              </div>
+                            </div>
+                          </div>
 
-                {/* Generate Button */}
-                <Button 
-                  onClick={handleGenerateBlog}
-                  disabled={isGenerating}
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-6 text-lg"
-                >
-                  {isGenerating ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                      <span>Generating Your Story...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="h-5 w-5" />
-                      <span>Generate Blog Post</span>
-                    </div>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
+                          <Separator />
 
-            {/* Recent Blogs */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Blog Posts</CardTitle>
-                <CardDescription>Your latest AI-generated stories</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentBlogs.map((blog) => (
-                    <div key={blog.id} className="flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg">{blog.title}</h3>
-                        <p className="text-gray-600 text-sm mt-1">{blog.snippet}</p>
-                        <div className="flex items-center space-x-2 mt-2">
-                          <span className="text-xs text-gray-500">{blog.date}</span>
-                          {blog.sources.map((source, idx) => (
-                            <Badge key={idx} variant="secondary" className="text-xs">
-                              {source}
-                            </Badge>
+                          <div className="space-y-2">
+                            <h4 className="text-sm font-medium">Forecast</h4>
+                            <div className="grid grid-cols-3 gap-2">
+                              {weather.forecast.map((day, i) => (
+                                <div key={i} className="text-center p-2 bg-gray-50 rounded">
+                                  <p className="text-xs font-medium">{day.day}</p>
+                                  <div className="my-1">
+                                    {getWeatherIcon(day.conditions)}
+                                  </div>
+                                  <p className="text-xs">
+                                    <span className="font-medium">{day.high}°</span> / {day.low}°
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <CloudOff className="h-8 w-8 mx-auto mb-2" />
+                          <p>Weather data unavailable</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {useEnhancedBlog && includeLocation && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center">
+                        <MapPin className="mr-2 h-5 w-5" />
+                        Location
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoadingLocation ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                        </div>
+                      ) : location ? (
+                        <div className="space-y-2">
+                          <p className="font-medium">{location.name}</p>
+                          <p className="text-sm text-gray-500">{location.country}</p>
+                          <p className="text-sm text-gray-500">
+                            {location.latitude.toFixed(4)}, {location.longitude.toFixed(4)}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Timezone: {location.timezone}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <MapPin className="h-8 w-8 mx-auto mb-2" />
+                          <p>Location data unavailable</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {useEnhancedBlog && includePhotos && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <ImageIcon className="mr-2 h-5 w-5" />
+                          Photos
+                        </div>
+                        <Badge>{selectedPhotos.length} selected</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {isLoadingPhotos ? (
+                        <div className="flex justify-center py-4">
+                          <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                        </div>
+                      ) : photos.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {photos.map((photo) => (
+                            <div 
+                              key={photo.id} 
+                              className={`relative cursor-pointer rounded-md overflow-hidden border-2 ${
+                                selectedPhotos.some(p => p.id === photo.id) 
+                                  ? 'border-blue-500' 
+                                  : 'border-transparent'
+                              }`}
+                              onClick={() => handlePhotoSelect(photo)}
+                            >
+                              <img 
+                                src={photo.url} 
+                                alt={photo.title} 
+                                className="w-full h-24 object-cover"
+                              />
+                              {selectedPhotos.some(p => p.id === photo.id) && (
+                                <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-1">
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                  </svg>
+                                </div>
+                              )}
+                            </div>
                           ))}
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-2 text-gray-500">
-                        <Eye className="h-4 w-4" />
-                        <span className="text-sm">{blog.views}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+                      ) : (
+                        <div className="text-center py-4 text-gray-500">
+                          <ImageIcon className="h-8 w-8 mx-auto mb-2" />
+                          <p>No photos available</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
+          </TabsContent>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            
-            {/* Today's Summary */}
+          <TabsContent value="ideas">
+            <IdeasProjectsManager />
+          </TabsContent>
+
+          <TabsContent value="mcp">
+            <MCPServerManager />
+          </TabsContent>
+
+          <TabsContent value="weather" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Today's Summary</CardTitle>
-                <CardDescription>Live data overview</CardDescription>
+                <CardTitle>Weather Dashboard</CardTitle>
+                <CardDescription>View detailed weather information for your location</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                
-                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50">
-                  <div className="flex items-center space-x-2">
-                    <Image className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium">Photos</span>
-                  </div>
-                  <Badge variant="secondary">{selectedPhotos.length} selected</Badge>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 rounded-lg bg-green-50">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">📍 Locations</span>
-                  </div>
-                  <Badge variant="secondary">{photoLocations.length} visited</Badge>
-                </div>
-                
-                <div className="flex items-center justify-between p-3 rounded-lg bg-yellow-50">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">🌤️ Weather</span>
-                  </div>
-                  <Badge variant="secondary">22°C</Badge>
-                </div>
-
-                <div className="flex items-center justify-between p-3 rounded-lg bg-purple-50">
-                  <div className="flex items-center space-x-2">
-                    <Lightbulb className="h-4 w-4 text-purple-600" />
-                    <span className="text-sm font-medium">Ideas</span>
-                  </div>
-                  <Badge variant="secondary">3 active</Badge>
+              <CardContent>
+                <div className="text-center py-12">
+                  <CloudSun className="h-16 w-16 mx-auto mb-4 text-blue-500" />
+                  <h3 className="text-xl font-medium">Weather Dashboard Coming Soon</h3>
+                  <p className="text-gray-500 mt-2">This feature is under development</p>
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
 
-            {/* Quick Actions */}
+          <TabsContent value="photos" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Quick Actions</CardTitle>
+                <CardTitle>Photo Gallery</CardTitle>
+                <CardDescription>Browse and manage your photos</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2">
-                <Button variant="outline" className="w-full justify-start">
-                  <Settings className="h-4 w-4 mr-2" />
-                  Configure Data Sources
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <User className="h-4 w-4 mr-2" />
-                  Connect Google Account
-                </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add New Agent
-                </Button>
+              <CardContent>
+                <div className="text-center py-12">
+                  <ImageIcon className="h-16 w-16 mx-auto mb-4 text-blue-500" />
+                  <h3 className="text-xl font-medium">Photo Gallery Coming Soon</h3>
+                  <p className="text-gray-500 mt-2">This feature is under development</p>
+                </div>
               </CardContent>
             </Card>
-          </div>
-        </div>
-      </div>
+          </TabsContent>
+        </Tabs>
+      </main>
     </div>
   );
 };
