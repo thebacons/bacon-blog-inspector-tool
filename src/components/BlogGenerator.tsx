@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generateBlogWithGemini } from '../services/blogService';
-import { FileText, Sparkles, MapPin, Cloud, Camera, Newspaper } from 'lucide-react';
+import { FileText, Sparkles, MapPin, Cloud, Camera, Newspaper, AlertCircle } from 'lucide-react';
 
 interface BlogGeneratorProps {
   weatherData?: any;
@@ -18,6 +19,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
   const [notes, setNotes] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBlog, setGeneratedBlog] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   
   // Enhancement options state
   const [useEnhancedBlog, setUseEnhancedBlog] = useState(true);
@@ -30,6 +32,9 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
     if (!notes.trim()) return;
 
     setIsGenerating(true);
+    setErrorMessage('');
+    setGeneratedBlog('');
+    
     try {
       const blog = await generateBlogWithGemini({
         topic: notes,
@@ -42,6 +47,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
       setGeneratedBlog(blog);
     } catch (error) {
       console.error('Error generating blog:', error);
+      setErrorMessage(error.message || 'Failed to generate blog post. Please try again.');
     } finally {
       setIsGenerating(false);
     }
@@ -183,6 +189,21 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
       >
         {isGenerating ? 'Generating...' : 'Generate Blog'}
       </Button>
+
+      {/* Error Message */}
+      {errorMessage && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {errorMessage}
+            {errorMessage.includes('API key') && (
+              <span className="block mt-2">
+                Please go to Settings → API Key Management to add your Google Gemini API key.
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Generated Blog */}
       {generatedBlog && (
