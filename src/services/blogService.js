@@ -14,11 +14,26 @@ const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY || 'dem
  */
 export async function generateBlogWithGemini({ topic, locationData, weatherData, selectedPhotos = [] }) {
   try {
+    // Import photo-weather correlation service
+    const { correlatePhotosWithWeather, generateWeatherStory } = await import('./photoWeatherCorrelation.js');
+    
+    // Correlate photos with weather data
+    const correlatedPhotos = correlatePhotosWithWeather(selectedPhotos, weatherData, locationData);
+    
+    // Generate weather story from photo timeline
+    const weatherStory = generateWeatherStory(correlatedPhotos, weatherData);
+    
     // Check if we have a real API key
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
     if (!apiKey || apiKey === 'demo-key') {
-      console.warn('No Gemini API key found, using enhanced mock generation with REAL data');
-      return generateEnhancedBlogWithRealData({ topic, locationData, weatherData, selectedPhotos });
+      console.warn('No Gemini API key found, using enhanced mock generation with REAL data and photo correlation');
+      return generateEnhancedBlogWithRealData({ 
+        topic, 
+        locationData, 
+        weatherData, 
+        selectedPhotos: correlatedPhotos,
+        weatherStory 
+      });
     }
 
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
@@ -40,6 +55,12 @@ REAL DATA INTEGRATION:
 - Mention the real location naturally to provide authentic setting
 - Connect weather to activities (e.g., "the crisp 8°C morning made the coffee taste even better")
 - Use weather as narrative elements (sunny day = optimistic tone, rainy = cozy/reflective)
+
+PHOTO-WEATHER CORRELATION:
+- Each photo has been correlated with actual weather conditions at the time it was taken
+- Use this information to create authentic weather narratives
+- Reference specific times when weather changed (e.g., "we got caught in the storm at 12:39")
+- Describe how weather affected the mood and experience captured in photos
 
 AUTHENTICITY MARKERS:
 - Reference specific temperatures, conditions, and locations provided
@@ -103,11 +124,19 @@ ${weatherData.windSpeed ? `Wind Speed: ${weatherData.windSpeed} km/h` : ''}
       }
     }
 
-    // Add photo context
-    if (selectedPhotos.length > 0) {
-      userPrompt += `PHOTOS FROM TODAY (${selectedPhotos.length} photos):
+    // Add weather story
+    if (weatherStory) {
+      userPrompt += `WEATHER TIMELINE STORY:
+${weatherStory}
+
 `;
-      selectedPhotos.forEach((photo, index) => {
+    }
+
+    // Add photo context with weather correlation
+    if (correlatedPhotos.length > 0) {
+      userPrompt += `PHOTOS WITH WEATHER CORRELATION (${correlatedPhotos.length} photos):
+`;
+      correlatedPhotos.forEach((photo, index) => {
         userPrompt += `Photo ${index + 1}:`;
         if (photo.aiAnalysis?.description) {
           userPrompt += ` ${photo.aiAnalysis.description}`;
@@ -118,6 +147,12 @@ ${weatherData.windSpeed ? `Wind Speed: ${weatherData.windSpeed} km/h` : ''}
         if (photo.location?.name) {
           userPrompt += ` (Location: ${photo.location.name})`;
         }
+        if (photo.weatherContext) {
+          userPrompt += ` [Weather at ${photo.weatherContext.time}: ${photo.weatherContext.temperature}°C, ${photo.weatherContext.conditions}]`;
+        }
+        if (photo.weatherNarrative) {
+          userPrompt += ` - ${photo.weatherNarrative}`;
+        }
         userPrompt += `
 `;
       });
@@ -126,14 +161,15 @@ ${weatherData.windSpeed ? `Wind Speed: ${weatherData.windSpeed} km/h` : ''}
     userPrompt += `
 IMPORTANT: Use this REAL location and weather data to create an authentic blog post. The weather and location information is actual data from today, not fictional. Make the environmental conditions feel like they genuinely influenced the day's experiences and mood.
 
-Transform these real details into an engaging, personal narrative that captures both the activities and the authentic environmental context of this specific day and location.`;
+Transform these real details into an engaging, personal narrative that captures both the activities and the authentic environmental context of this specific day and location. Use the photo-weather correlations to add specific, timed weather events to your narrative.`;
 
-    console.log('Sending request to Gemini 2.5 Flash with REAL data:', { 
+    console.log('Sending request to Gemini 2.5 Flash with REAL data and photo correlation:', { 
       topic: topic.substring(0, 50) + '...',
       location: locationData?.name,
       weather: `${weatherData?.temperature}°C, ${weatherData?.conditions}`,
       weatherSource: weatherData?.source,
-      locationSource: locationData?.source
+      locationSource: locationData?.source,
+      correlatedPhotos: correlatedPhotos.length
     });
 
     // Generate content with Gemini
@@ -145,7 +181,7 @@ Transform these real details into an engaging, personal narrative that captures 
     const response = await result.response;
     const blogContent = response.text();
 
-    console.log('Blog post generated successfully with REAL data using Gemini 2.5 Flash');
+    console.log('Blog post generated successfully with REAL data and photo correlation using Gemini 2.5 Flash');
     return blogContent;
 
   } catch (error) {
@@ -158,12 +194,14 @@ Transform these real details into an engaging, personal narrative that captures 
 /**
  * Enhanced blog generation using REAL location and weather data (fallback)
  */
-function generateEnhancedBlogWithRealData({ topic, locationData, weatherData, selectedPhotos = [] }) {
-  console.log('Generating enhanced blog with REAL data:', {
+function generateEnhancedBlogWithRealData({ topic, locationData, weatherData, selectedPhotos = [], weatherStory }) {
+  console.log('Generating enhanced blog with REAL data and photo correlation:', {
     location: locationData?.name,
     locationSource: locationData?.source,
     weather: weatherData ? `${weatherData.temperature}°C, ${weatherData.conditions}` : 'No weather',
-    weatherSource: weatherData?.source
+    weatherSource: weatherData?.source,
+    correlatedPhotos: selectedPhotos.length,
+    hasWeatherStory: !!weatherStory
   });
 
   const currentDate = new Date().toLocaleDateString('en-US', { 
@@ -212,19 +250,34 @@ function generateEnhancedBlogWithRealData({ topic, locationData, weatherData, se
 <p>${createNarrativeFromNotes(topic, weatherData, locationData)}</p>
 `;
 
-  // Add photo section if photos exist
+  // Add weather story if available
+  if (weatherStory) {
+    blogContent += `
+<p>${weatherStory}</p>
+`;
+  }
+
+  // Add photo section with weather correlation
   if (selectedPhotos.length > 0) {
     blogContent += `
 <h2>Captured Moments</h2>
 <p>Today I was fortunate to capture ${selectedPhotos.length} beautiful moments. `;
     
-    selectedPhotos.slice(0, 2).forEach((photo, index) => {
+    selectedPhotos.slice(0, 3).forEach((photo, index) => {
       if (photo.aiAnalysis?.description) {
-        blogContent += `${index === 0 ? 'The first image shows' : 'Another shot captures'} ${photo.aiAnalysis.description.toLowerCase()}. `;
+        const photoIntro = index === 0 ? 'The first image shows' : 
+                          index === 1 ? 'Another shot captures' : 'One particularly memorable photo shows';
+        blogContent += `${photoIntro} ${photo.aiAnalysis.description.toLowerCase()}`;
+        
+        // Add weather context if available
+        if (photo.weatherNarrative) {
+          blogContent += ` - ${photo.weatherNarrative}`;
+        }
+        blogContent += '. ';
       }
     });
     
-    blogContent += `Each photograph tells part of today's story, preserved against the backdrop of ${weatherData?.conditions || 'today\'s conditions'}.</p>
+    blogContent += `Each photograph tells part of today's story, preserved against the backdrop of the changing weather conditions.</p>
 `;
   }
 
@@ -253,7 +306,8 @@ function generateEnhancedBlogWithRealData({ topic, locationData, weatherData, se
 <div style="margin-top: 20px; padding: 10px; background-color: #f8f9fa; border-radius: 5px; font-size: 0.9em; color: #666;">
 <strong>Today's Real Data:</strong><br>
 ${locationData ? `📍 Location: ${locationData.name} (via ${locationData.source})` : '📍 Location: Not available'}<br>
-${weatherData ? `🌤️ Weather: ${weatherData.temperature}°C, ${weatherData.conditions} (via ${weatherData.source})` : '🌤️ Weather: Not available'}
+${weatherData ? `🌤️ Weather: ${weatherData.temperature}°C, ${weatherData.conditions} (via ${weatherData.source})` : '🌤️ Weather: Not available'}<br>
+${selectedPhotos.length > 0 ? `📸 Photos: ${selectedPhotos.length} images with weather correlation` : '📸 Photos: No photos added'}
 </div>`;
 
   return blogContent;
