@@ -98,24 +98,54 @@ const Index = () => {
     setGeneratedBlog("");
 
     try {
-      // Simulate API call with a timeout
-      setTimeout(() => {
-        const mockBlog = `# ${blogTopic}\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl.\n\n## Section 1\n\nNullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl.\n\n## Section 2\n\nNullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl. Nullam euismod, nisl eget aliquam ultricies, nunc nisl aliquet nunc, quis aliquam nisl nunc quis nisl.`;
-        
-        setGeneratedBlog(mockBlog);
-        setIsGenerating(false);
-        
-        toast({
-          title: "Blog Generated",
-          description: "Your blog post has been generated successfully!",
-        });
-      }, 2000);
+      // Call the real blog generation API
+      const payload = {
+        text: blogTopic,
+        useDateTitle: true,
+        useTodaysPhotos: includePhotos,
+        usePhotoData: includePhotos,
+        useSmartLocation: includeLocation,
+        useWeatherData: includeWeather,
+        useNewsData: includeNews,
+        selectedPhotos: selectedPhotos,
+        newsTopics: newsTopics.split(',').map(topic => topic.trim()).filter(Boolean),
+        locationData: locationData || {},
+        weatherData: weatherData || {},
+        todaysPhotos: selectedPhotos,
+      };
+
+      const apiUrl = useEnhancedBlog 
+        ? 'http://localhost:4000/api/blog/generate-enhanced'
+        : 'http://localhost:4000/api/blog/generate';
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer orchestrator-message-key'
+        },
+        body: JSON.stringify(useEnhancedBlog ? payload : { text: blogTopic })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      setGeneratedBlog(data.blogPost || data.content || 'No content generated');
+      
+      toast({
+        title: "Blog Generated",
+        description: "Your blog post has been generated successfully!",
+      });
     } catch (error) {
+      console.error('Blog generation error:', error);
       toast({
         title: "Generation Failed",
         description: error.message || "Failed to generate blog content. Please try again.",
         variant: "destructive",
       });
+    } finally {
       setIsGenerating(false);
     }
   };
@@ -445,22 +475,18 @@ const Index = () => {
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
-                        <div className="prose max-w-none">
-                          {generatedBlog.split('\n').map((line, i) => {
-                            if (line.startsWith('# ')) {
-                              return <h1 key={i} className="text-2xl font-bold mt-4 mb-2">{line.substring(2)}</h1>;
-                            } else if (line.startsWith('## ')) {
-                              return <h2 key={i} className="text-xl font-bold mt-4 mb-2">{line.substring(3)}</h2>;
-                            } else if (line.trim() === '') {
-                              return <br key={i} />;
-                            } else {
-                              return <p key={i} className="mb-2">{line}</p>;
-                            }
-                          })}
-                        </div>
+                        <div 
+                          className="prose max-w-none"
+                          dangerouslySetInnerHTML={{ __html: generatedBlog }}
+                        />
                       </CardContent>
                       <CardFooter className="flex justify-between">
-                        <Button variant="outline">Copy to Clipboard</Button>
+                        <Button 
+                          variant="outline"
+                          onClick={() => navigator.clipboard.writeText(generatedBlog)}
+                        >
+                          Copy to Clipboard
+                        </Button>
                         <Button variant="outline">Download as Markdown</Button>
                       </CardFooter>
                     </Card>
