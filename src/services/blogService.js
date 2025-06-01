@@ -5,7 +5,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GOOGLE_API_KEY || 'demo-key');
 
 /**
- * Generate a blog post using Gemini 2.5 Flash with REAL location and weather context
+ * Generate a blog post using Gemini 2.5 Pro Preview with REAL location and weather context
  * @param {Object} params - Blog generation parameters
  * @param {string} params.topic - The main blog topic/notes
  * @param {Object} params.locationData - REAL location information from GPS/IP
@@ -35,6 +35,7 @@ export async function generateBlogWithGemini({
     // Check if we have a real API key
     const apiKey = import.meta.env.VITE_GOOGLE_API_KEY;
     console.log('API Key exists:', !!apiKey && apiKey !== 'demo-key');
+    console.log('API Key length:', apiKey ? apiKey.length : 0);
     
     if (!apiKey || apiKey === 'demo-key') {
       console.warn('No Gemini API key found, using enhanced mock generation with REAL data');
@@ -46,37 +47,42 @@ export async function generateBlogWithGemini({
       });
     }
 
+    // Use Gemini 2.5 Pro Preview 05-06 model
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
     
     // Create comprehensive system prompt for authentic blog writing
-    const systemPrompt = `You are a skilled personal blog writer who creates engaging, authentic blog posts from daily experiences and rough notes. 
+    const systemPrompt = `You are a skilled personal storyteller who transforms rough daily notes into engaging, authentic blog posts. 
+
+CRITICAL TASK: Transform disconnected bullet points and rough notes into a flowing, compelling personal narrative.
 
 WRITING STYLE:
 - Write in first person as someone who actually lived this day
-- Create a flowing narrative that naturally connects activities and observations
-- Use vivid, sensory descriptions that paint a picture of the experience
-- Include personal reflections and insights
-- Structure with clear sections but smooth transitions between them
+- Transform rough notes into smooth, connected storytelling 
+- Add emotional depth and personal meaning to simple events
+- Use vivid, sensory descriptions that paint a picture
+- Include personal reflections and insights that make the story relatable
+- Create natural transitions between different activities/thoughts
 - Target 400-600 words for substantial but readable content
-- Make it feel like a real person's authentic diary entry
+- Make it feel like a real person's authentic diary entry with personality
+
+STORY TRANSFORMATION RULES:
+- NEVER just repeat the user's rough notes verbatim
+- Expand brief mentions into full scenes with context
+- Connect seemingly unrelated events into a cohesive day's story
+- Add details about thoughts, feelings, and observations
+- Use the weather and location to enhance the storytelling atmosphere
+- Transform fragments like "dog ran away, took cat for a walk instead" into full narrative scenes
 
 REAL DATA INTEGRATION:
-- The location and weather data provided is REAL, not simulated
-- Reference actual weather conditions to set mood and atmosphere
-- Mention the real location naturally to provide authentic setting
-- Connect weather to activities and mood (e.g., "the crisp 8°C morning made the coffee taste even better")
-- Use weather as narrative elements throughout the story
-
-CONTENT TRANSFORMATION:
-- Transform rough bullet points into smooth, connected narrative
-- Don't just list activities - weave them into a cohesive story of the day
-- Add emotional context and personal meaning to simple activities
-- Use the environment (weather/location) to enhance the storytelling
+- Weave actual weather conditions naturally into the narrative mood and activities
+- Reference the real location to provide authentic setting details  
+- Use environmental details to enhance the story's atmosphere
+- Connect weather to emotions and activities organically
 
 OUTPUT FORMAT:
 - Return clean HTML with h1 for title, h2 for sections, p for paragraphs
-- Create engaging titles that reflect the actual experience and location
-- Structure: Scene-setting opening, main activities/experiences, personal reflections
+- Create engaging titles that capture the day's essence and mood
+- Structure as natural story flow, not a list of activities
 - No markdown - pure HTML only`;
 
     // Build the user prompt with comprehensive context
@@ -87,39 +93,40 @@ OUTPUT FORMAT:
       day: 'numeric' 
     });
 
-    let userPrompt = `Transform these rough notes into an engaging personal blog post for ${currentDate}:
+    let userPrompt = `Transform these rough notes into an engaging personal blog story for ${currentDate}:
 
-ROUGH NOTES/BULLET POINTS:
-${topic}
+ROUGH NOTES TO TRANSFORM:
+"${topic}"
+
+INSTRUCTIONS: These are rough, disconnected notes. Your job is to transform them into a beautiful, flowing personal story. Don't just repeat the words - create scenes, add emotions, build connections between events. Make this feel like a real person telling the story of their day.
 
 `;
 
     // Add REAL location context
     if (locationData?.name) {
-      userPrompt += `REAL LOCATION DATA:
+      userPrompt += `REAL LOCATION CONTEXT:
 Location: ${locationData.name}
 ${locationData.country ? `Country: ${locationData.country}` : ''}
-${locationData.timezone ? `Timezone: ${locationData.timezone}` : ''}
-Coordinates: ${locationData.latitude?.toFixed(4)}, ${locationData.longitude?.toFixed(4)}
+Use this location naturally in your storytelling to set the scene.
 
 `;
     }
 
-    // Add REAL weather context
+    // Add REAL weather context  
     if (weatherData?.temperature !== undefined) {
       userPrompt += `REAL WEATHER CONDITIONS:
-Current Temperature: ${weatherData.temperature}${weatherData.unit || '°C'}
+Temperature: ${weatherData.temperature}${weatherData.unit || '°C'}
 Conditions: ${weatherData.conditions || 'Unknown'}
 ${weatherData.feelsLike ? `Feels Like: ${weatherData.feelsLike}${weatherData.unit || '°C'}` : ''}
 ${weatherData.humidity ? `Humidity: ${weatherData.humidity}%` : ''}
-${weatherData.windSpeed ? `Wind Speed: ${weatherData.windSpeed} km/h` : ''}
+Weave these weather details naturally into the story atmosphere and activities.
 
 `;
     }
 
     // Add photo context
     if (selectedPhotos.length > 0) {
-      userPrompt += `PHOTOS TAKEN TODAY (${selectedPhotos.length} photos):
+      userPrompt += `PHOTOS FROM TODAY (${selectedPhotos.length} photos):
 `;
       selectedPhotos.slice(0, 3).forEach((photo, index) => {
         userPrompt += `Photo ${index + 1}:`;
@@ -129,22 +136,14 @@ ${weatherData.windSpeed ? `Wind Speed: ${weatherData.windSpeed} km/h` : ''}
         if (photo.aiAnalysis?.mood) {
           userPrompt += ` (Mood: ${photo.aiAnalysis.mood})`;
         }
-        if (photo.location?.name) {
-          userPrompt += ` (Location: ${photo.location.name})`;
-        }
         userPrompt += `\n`;
       });
-      userPrompt += `\n`;
+      userPrompt += `Reference these photos naturally in your storytelling if relevant.\n\n`;
     }
 
-    userPrompt += `INSTRUCTIONS:
-Transform these rough notes into a beautiful, flowing personal blog post. Don't just copy the notes - use them as inspiration to tell the story of this day. Weave in the weather conditions and location naturally. Make it feel like someone actually experienced this day in these specific conditions at this specific place.
+    userPrompt += `FINAL REMINDER: Transform the rough notes into a compelling personal story with scenes, emotions, and natural flow. Make the reader feel like they experienced this day with you.`;
 
-Create an engaging title that captures the essence of the day and location. Structure the content as a natural narrative, not a list of activities. Add personal insights and emotional context that makes the simple moments meaningful.
-
-The goal is to turn basic notes into a compelling story that feels authentic and engaging.`;
-
-    console.log('Sending enhanced prompt to Gemini with real context data');
+    console.log('Sending enhanced prompt to Gemini 2.5 Pro Preview with real context data');
 
     // Generate content with Gemini
     const result = await model.generateContent([
@@ -155,11 +154,13 @@ The goal is to turn basic notes into a compelling story that feels authentic and
     const response = await result.response;
     const blogContent = response.text();
 
-    console.log('Blog post generated successfully with Gemini 2.0 Flash');
+    console.log('Blog post generated successfully with Gemini 2.5 Pro Preview');
+    console.log('Generated content preview:', blogContent.substring(0, 200) + '...');
     return blogContent;
 
   } catch (error) {
     console.error('Error generating blog with Gemini:', error);
+    console.error('Error details:', error.message);
     // Fallback to enhanced generation with real data
     return generateEnhancedBlogWithRealData({ topic, locationData, weatherData, selectedPhotos });
   }
