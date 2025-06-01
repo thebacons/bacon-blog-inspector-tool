@@ -141,24 +141,32 @@ CRITICAL INSTRUCTIONS:
 
 `;
 
-    // Add REAL location context
+    // Add REAL location context with more detail
     if (locationData?.name) {
       userPrompt += `REAL LOCATION CONTEXT:
 Location: ${locationData.name}
 ${locationData.country ? `Country: ${locationData.country}` : ''}
-Use this location naturally in your storytelling to set the scene.
+${locationData.region ? `Region: ${locationData.region}` : ''}
+Use this location naturally in your storytelling to set the scene and provide authentic geographic context.
 
 `;
     }
 
-    // Add REAL weather context  
-    if (weatherData?.temperature !== undefined) {
-      userPrompt += `REAL WEATHER CONDITIONS:
-Temperature: ${weatherData.temperature}${weatherData.unit || '°C'}
-Conditions: ${weatherData.conditions || 'Unknown'}
-${weatherData.feelsLike ? `Feels Like: ${weatherData.feelsLike}${weatherData.unit || '°C'}` : ''}
-${weatherData.humidity ? `Humidity: ${weatherData.humidity}%` : ''}
-Weave these weather details naturally into the story atmosphere and activities.
+    // Add REAL weather context with comprehensive details
+    if (weatherData?.current) {
+      const weather = weatherData.current;
+      userPrompt += `REAL WEATHER CONDITIONS FOR TODAY:
+Temperature: ${weather.temperature}°C
+Conditions: ${weather.conditions || 'Unknown'}
+${weather.feelsLike ? `Feels Like: ${weather.feelsLike}°C` : ''}
+${weather.humidity ? `Humidity: ${weather.humidity}%` : ''}
+${weather.windSpeed ? `Wind Speed: ${weather.windSpeed} km/h` : ''}
+
+WEATHER SOURCE: ${weatherData.source || 'Real weather data'}
+${weatherData.astronomy?.sunrise ? `Sunrise: ${weatherData.astronomy.sunrise}` : ''}
+${weatherData.astronomy?.sunset ? `Sunset: ${weatherData.astronomy.sunset}` : ''}
+
+Weave these real weather details naturally into the story atmosphere, activities, and mood. Use the actual temperature and conditions to inform how the day felt and what activities were possible or enjoyable.
 
 `;
     }
@@ -177,10 +185,10 @@ Weave these weather details naturally into the story atmosphere and activities.
         }
         userPrompt += `\n`;
       });
-      userPrompt += `Reference these photos naturally in your storytelling if relevant.\n\n`;
+      userPrompt += `Reference these photos naturally in your storytelling if relevant to the day's events.\n\n`;
     }
 
-    userPrompt += `FINAL REMINDER: Transform the rough notes into a compelling personal story with scenes, emotions, and natural flow. DO NOT invent names, places, or specific details not provided. Work only with what you have been given.`;
+    userPrompt += `FINAL REMINDER: Transform the rough notes into a compelling personal story with scenes, emotions, and natural flow. DO NOT invent names, places, or specific details not provided. Work only with what you have been given. Use the real weather and location data to enhance the authenticity and atmosphere of the story.`;
 
     console.log('Sending prompt to Gemini 2.0 Flash with real context data');
 

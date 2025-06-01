@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { generateBlogWithGemini } from '../services/blogService';
-import { FileText, Sparkles, MapPin, Cloud, Camera, Newspaper, AlertCircle } from 'lucide-react';
+import { FileText, Sparkles, MapPin, Cloud, Camera, Newspaper, AlertCircle, Download, FileDown, Share2 } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface BlogGeneratorProps {
   weatherData?: any;
@@ -53,6 +54,81 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
     }
   };
 
+  const exportToHTML = () => {
+    const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog Post</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+        h1 { color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+        h2 { color: #1f2937; margin-top: 30px; }
+        p { margin-bottom: 15px; }
+    </style>
+</head>
+<body>
+    ${generatedBlog}
+</body>
+</html>`;
+    
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'blog-post.html';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToMarkdown = () => {
+    // Convert HTML to Markdown (basic conversion)
+    let markdown = generatedBlog
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1\n\n')
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1\n\n')
+      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1\n\n')
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+      .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+      .replace(/<br\s*\/?>/gi, '\n');
+    
+    const blob = new Blob([markdown], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'blog-post.md';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportToPDF = () => {
+    // Simple PDF export using print dialog
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Blog Post</title>
+            <style>
+                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; line-height: 1.6; }
+                h1 { color: #2563eb; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
+                h2 { color: #1f2937; margin-top: 30px; }
+                p { margin-bottom: 15px; }
+                @media print { body { margin: 0; } }
+            </style>
+        </head>
+        <body>
+            ${generatedBlog}
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Context Information */}
@@ -75,7 +151,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
               {weatherData && (
                 <Badge variant="outline" className="flex items-center space-x-1">
                   <Cloud className="h-3 w-3" />
-                  <span>{weatherData.temperature}°C, {weatherData.conditions}</span>
+                  <span>{weatherData.current?.temperature}°C, {weatherData.current?.conditions}</span>
                 </Badge>
               )}
               {selectedPhotos.length > 0 && (
@@ -209,11 +285,37 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
       {generatedBlog && (
         <Card>
           <CardHeader>
-            <CardTitle>Generated Blog Post</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Generated Blog Post</CardTitle>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Export Options</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={exportToPDF}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export as PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToHTML}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export as HTML
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToMarkdown}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Export as Markdown
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           <CardContent>
             <div 
-              className="prose max-w-none"
+              className="prose max-w-none prose-headings:text-gray-900 prose-h1:text-2xl prose-h1:font-bold prose-h1:border-b prose-h1:border-gray-200 prose-h1:pb-2 prose-h2:text-xl prose-h2:font-semibold prose-h2:mt-6 prose-p:mb-4 prose-p:leading-relaxed"
               dangerouslySetInnerHTML={{ __html: generatedBlog }}
             />
           </CardContent>
