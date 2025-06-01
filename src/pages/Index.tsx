@@ -98,14 +98,13 @@ const Index = () => {
     setGeneratedBlog("");
 
     try {
-      // For now, let's use a mock implementation that works with the data we have
-      // This simulates what the enhanced blog generation would produce
-      const mockEnhancedBlog = generateMockBlog();
+      // Enhanced mock implementation that creates intelligent narratives
+      const enhancedBlog = generateIntelligentBlog();
       
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setGeneratedBlog(mockEnhancedBlog);
+      setGeneratedBlog(enhancedBlog);
       
       toast({
         title: "Blog Generated",
@@ -123,59 +122,225 @@ const Index = () => {
     }
   };
 
-  const generateMockBlog = () => {
+  const generateIntelligentBlog = () => {
     const today = format(new Date(), "EEEE, MMMM do, yyyy");
-    let blogContent = `<h1>A Wonderful ${today}</h1>\n\n`;
+    const timeOfDay = new Date().getHours();
+    const isEvening = timeOfDay >= 17;
+    const isMorning = timeOfDay < 12;
+    const isAfternoon = timeOfDay >= 12 && timeOfDay < 17;
     
-    // Add weather context if available
+    // Parse the user's notes to extract activities and create a narrative
+    const notes = blogTopic.trim().toLowerCase();
+    const activities = parseActivities(notes);
+    const people = extractPeople(notes);
+    
+    // Create an intelligent title based on the day's main activity
+    const mainActivity = activities.length > 0 ? activities[0] : 'day';
+    const title = generateSmartTitle(today, mainActivity, weatherData?.conditions);
+    
+    let blogContent = `<h1>${title}</h1>\n\n`;
+    
+    // Opening paragraph with weather and mood setting
     if (weatherData) {
-      blogContent += `<p>What a beautiful ${weatherData.conditions.toLowerCase()} day! The temperature reached a comfortable ${weatherData.temperature}${weatherData.unit}, making it perfect for outdoor activities.</p>\n\n`;
+      const weatherMood = getWeatherMood(weatherData.conditions);
+      blogContent += `<p>What a ${weatherMood} ${today}! `;
+      
+      if (isMorning) {
+        blogContent += `The morning greeted me with ${weatherData.conditions.toLowerCase()} skies and a comfortable ${weatherData.temperature}${weatherData.unit}. `;
+      } else if (isAfternoon) {
+        blogContent += `The afternoon brought ${weatherData.conditions.toLowerCase()} weather with temperatures reaching ${weatherData.temperature}${weatherData.unit}. `;
+      } else {
+        blogContent += `As evening settles in, I'm reflecting on a day that was blessed with ${weatherData.conditions.toLowerCase()} weather and temperatures of ${weatherData.temperature}${weatherData.unit}. `;
+      }
+      
+      blogContent += `Perfect weather for the adventures that lay ahead.</p>\n\n`;
+    } else {
+      blogContent += `<p>What a wonderful ${today}! `;
+      if (isEvening) {
+        blogContent += `As I reflect on the day that's coming to a close, `;
+      } else {
+        blogContent += `The day has been filled with `;
+      }
+      blogContent += `moments that remind me why I love documenting these experiences.</p>\n\n`;
     }
     
-    // Process the user's notes
-    if (blogTopic.trim()) {
-      const notes = blogTopic.trim();
-      blogContent += `<p>${notes}</p>\n\n`;
-      
-      // Add context based on notes content
-      if (notes.toLowerCase().includes('gym')) {
-        blogContent += `<p>Starting the day with a workout at the gym always sets a positive tone. There's something energizing about getting the blood flowing early in the morning.</p>\n\n`;
-      }
-      
-      if (notes.toLowerCase().includes('bicycle') || notes.toLowerCase().includes('bike')) {
-        blogContent += `<p>Cycling to the gym not only provides extra exercise but also lets me enjoy the fresh morning air and observe the neighborhood coming to life.</p>\n\n`;
-      }
-      
-      if (notes.toLowerCase().includes('lawn') || notes.toLowerCase().includes('mow')) {
-        blogContent += `<p>Taking care of the lawn is one of those satisfying weekend tasks. There's something therapeutic about maintaining your outdoor space, especially on such a pleasant day.</p>\n\n`;
-      }
-      
-      if (notes.toLowerCase().includes('petrol') || notes.toLowerCase().includes('gas')) {
-        blogContent += `<p>Running errands like filling up with petrol reminds me to appreciate these everyday moments and the freedom to move around easily.</p>\n\n`;
-      }
-    }
+    // Create narrative sections based on activities
+    const narrativeSections = createNarrativeSections(activities, people, notes);
+    blogContent += narrativeSections;
     
-    // Add photo context if photos are selected
+    // Add photo context if available
     if (includePhotos && selectedPhotos.length > 0) {
-      blogContent += `<h2>Capturing the Day</h2>\n\n`;
-      blogContent += `<p>I managed to capture ${selectedPhotos.length} special moments today that really tell the story of this wonderful day:</p>\n\n`;
+      blogContent += `<h2>Moments Captured</h2>\n\n`;
+      blogContent += `<p>Today I was fortunate to capture ${selectedPhotos.length} beautiful moments that truly tell the story of this ${mainActivity === 'day' ? 'wonderful day' : mainActivity}. `;
       
       selectedPhotos.forEach((photo, index) => {
-        if (photo.aiAnalysis) {
-          blogContent += `<p><em>${photo.aiAnalysis.description}</em> - This photo perfectly captures the ${photo.aiAnalysis.mood} atmosphere of the day.</p>\n\n`;
+        if (photo.aiAnalysis?.description) {
+          const description = photo.aiAnalysis.description.toLowerCase();
+          if (index === 0) {
+            blogContent += `The first image reveals ${description}, setting the tone for the entire day. `;
+          } else if (index === selectedPhotos.length - 1) {
+            blogContent += `The final capture shows ${description}, a perfect ending to the visual story. `;
+          } else {
+            blogContent += `Another frame captures ${description}, adding another layer to the day's narrative. `;
+          }
         }
       });
+      
+      blogContent += `Each photograph serves as a window into the emotions and experiences that made today special.</p>\n\n`;
     }
     
-    // Add location context if available
+    // Add location context
     if (includeLocation && locationData) {
-      blogContent += `<p>Being here in ${locationData.name} always makes me grateful for the beautiful surroundings and community we have.</p>\n\n`;
+      blogContent += `<p>Being here in ${locationData.name} adds an extra dimension to these experiences. There's something magical about this place that makes even ordinary moments feel extraordinary. The familiar streets, the local atmosphere, and the sense of community all contribute to making days like this memorable.</p>\n\n`;
     }
     
-    // Add a closing reflection
-    blogContent += `<p>Days like these remind me to appreciate the simple pleasures and routine activities that make up a fulfilling life. Each moment, from the morning workout to the evening reflection, contributes to a day well-lived.</p>`;
+    // Closing reflection
+    blogContent += `<h2>Evening Reflections</h2>\n\n`;
+    blogContent += `<p>As ${today} draws to a close, I'm filled with gratitude for the simple yet meaningful experiences that shaped this day. `;
+    
+    if (activities.length > 1) {
+      blogContent += `From ${activities[0]} to ${activities[activities.length - 1]}, each moment contributed to a day well-lived. `;
+    }
+    
+    if (people.length > 0) {
+      blogContent += `Sharing these moments with ${people.join(' and ')} made them even more special. `;
+    }
+    
+    blogContent += `These are the days that remind us to appreciate the beauty in routine, the joy in simple pleasures, and the importance of being present in each moment.</p>`;
     
     return blogContent;
+  };
+
+  const parseActivities = (notes) => {
+    const activities = [];
+    
+    // Enhanced activity detection with better narrative descriptions
+    const activityMap = {
+      'gym': 'energizing workout session',
+      'bicycle': 'refreshing bicycle ride',
+      'motorcycle': 'exhilarating motorcycle journey',
+      'lawn': 'therapeutic lawn maintenance',
+      'mow': 'satisfying lawn care',
+      'petrol': 'practical errands around town',
+      'gas': 'essential stops during the day',
+      'coffee': 'delightful coffee moments',
+      'lunch': 'wonderful lunch experience',
+      'dinner': 'memorable dinner',
+      'walk': 'peaceful walk',
+      'run': 'invigorating run',
+      'dog': 'quality time with furry companion',
+      'beer': 'relaxing social time',
+      'shopping': 'productive shopping trip',
+      'work': 'focused work session',
+      'meeting': 'important meeting'
+    };
+    
+    Object.entries(activityMap).forEach(([keyword, description]) => {
+      if (notes.includes(keyword)) {
+        activities.push(description);
+      }
+    });
+    
+    return activities.length > 0 ? activities : ['wonderful day'];
+  };
+
+  const extractPeople = (notes) => {
+    const people = [];
+    
+    // Simple name detection (capitalize first letter of potential names)
+    const words = notes.split(' ');
+    words.forEach(word => {
+      // Look for capitalized words that might be names (basic detection)
+      if (word.length > 2 && word[0] === word[0].toUpperCase() && word.slice(1) === word.slice(1).toLowerCase()) {
+        // Filter out common words that might be capitalized
+        const commonWords = ['the', 'and', 'met', 'went', 'got', 'back', 'when', 'morning', 'afternoon', 'evening'];
+        if (!commonWords.includes(word.toLowerCase())) {
+          people.push(word);
+        }
+      }
+    });
+    
+    return people;
+  };
+
+  const generateSmartTitle = (date, mainActivity, weather) => {
+    const dayName = format(new Date(), "EEEE");
+    
+    if (weather) {
+      const weatherAdj = getWeatherAdjective(weather);
+      return `${dayName}'s ${weatherAdj} Adventure: ${capitalizeFirst(mainActivity)}`;
+    }
+    
+    return `A Perfect ${dayName}: ${capitalizeFirst(mainActivity)}`;
+  };
+
+  const getWeatherMood = (conditions) => {
+    const condition = conditions?.toLowerCase() || '';
+    if (condition.includes('sunny') || condition.includes('clear')) return 'glorious';
+    if (condition.includes('cloudy') || condition.includes('overcast')) return 'contemplative';
+    if (condition.includes('rain')) return 'cozy';
+    if (condition.includes('snow')) return 'magical';
+    return 'beautiful';
+  };
+
+  const getWeatherAdjective = (conditions) => {
+    const condition = conditions?.toLowerCase() || '';
+    if (condition.includes('sunny')) return 'Sun-Kissed';
+    if (condition.includes('cloudy')) return 'Thoughtful';
+    if (condition.includes('rain')) return 'Refreshing';
+    if (condition.includes('clear')) return 'Crystal Clear';
+    return 'Beautiful';
+  };
+
+  const capitalizeFirst = (str) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+
+  const createNarrativeSections = (activities, people, notes) => {
+    let narrative = `<h2>The Day Unfolds</h2>\n\n`;
+    
+    // Create a flowing narrative based on the original notes
+    if (notes.includes('sunny') && notes.includes('morning')) {
+      narrative += `<p>The day began with brilliant sunshine streaming through the windows, promising adventures ahead. `;
+    } else {
+      narrative += `<p>The morning started with a sense of anticipation for the day's activities. `;
+    }
+    
+    if (notes.includes('gym') && notes.includes('bicycle')) {
+      narrative += `I decided to combine fitness with eco-friendly transportation, cycling to the gym for my workout. There's something invigorating about starting the day with movement, feeling the morning air as I pedal through the neighborhood. The gym session that followed was exactly what I needed to set a positive tone for the hours ahead.</p>\n\n`;
+    } else if (notes.includes('gym')) {
+      narrative += `A trip to the gym provided the perfect start to the day. There's nothing quite like that post-workout endorphin rush that colors everything else with positivity.</p>\n\n`;
+    }
+    
+    if (notes.includes('lawn') || notes.includes('mow')) {
+      narrative += `<p>Returning home, I turned my attention to the lawn. There's something deeply satisfying about lawn care - the rhythmic motion, the immediate visual results, and that sense of taking care of your space. `;
+      if (notes.includes('got back')) {
+        narrative += `It felt good to transition from the energy of the gym to this more meditative, grounding activity. `;
+      }
+      narrative += `Working outdoors, I could appreciate the weather and feel connected to the simple pleasure of maintaining our home.</p>\n\n`;
+    }
+    
+    if (notes.includes('dog') && notes.includes('fed')) {
+      narrative += `<p>Of course, no day is complete without tending to our four-legged family member. Feeding time is always a moment of pure joy - seeing that excited tail wag and grateful eyes reminds me of the simple pleasures in daily routines.</p>\n\n`;
+    }
+    
+    if (people.length > 0 && (notes.includes('lunch') || notes.includes('beer'))) {
+      narrative += `<p>The afternoon brought social connection when I met up with ${people.join(' and ')} for `;
+      if (notes.includes('beer') && notes.includes('lunch')) {
+        narrative += `a relaxing lunch and drinks. `;
+      } else if (notes.includes('beer')) {
+        narrative += `some refreshing drinks. `;
+      } else {
+        narrative += `lunch. `;
+      }
+      narrative += `These moments of connection, sharing stories and laughter, are what transform ordinary days into memorable ones. There's something special about taking time to catch up with good people over good food and drinks.</p>\n\n`;
+    }
+    
+    if (notes.includes('petrol') || notes.includes('gas')) {
+      narrative += `<p>Even practical tasks like filling up with fuel became part of the day's rhythm. These routine errands, while mundane on the surface, offer moments for reflection and appreciation of our freedom to move through the world.</p>\n\n`;
+    }
+    
+    return narrative;
   };
 
   const fetchWeatherData = async (): Promise<WeatherData> => {
