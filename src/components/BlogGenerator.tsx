@@ -112,7 +112,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
             <Checkbox 
               id="enhanced-blog"
               checked={useEnhancedBlog}
-              onCheckedChange={setUseEnhancedBlog}
+              onCheckedChange={(checked) => setUseEnhancedBlog(checked === true)}
             />
             <label htmlFor="enhanced-blog" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
               Enhanced blogs include contextual information like weather, location, and photos
@@ -127,7 +127,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
                 <Checkbox 
                   id="include-weather"
                   checked={includeWeather}
-                  onCheckedChange={setIncludeWeather}
+                  onCheckedChange={(checked) => setIncludeWeather(checked === true)}
                 />
                 <Cloud className="h-4 w-4" />
                 <label htmlFor="include-weather" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -139,7 +139,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
                 <Checkbox 
                   id="include-photos"
                   checked={includePhotos}
-                  onCheckedChange={setIncludePhotos}
+                  onCheckedChange={(checked) => setIncludePhotos(checked === true)}
                 />
                 <Camera className="h-4 w-4" />
                 <label htmlFor="include-photos" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -151,7 +151,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
                 <Checkbox 
                   id="include-location"
                   checked={includeLocation}
-                  onCheckedChange={setIncludeLocation}
+                  onCheckedChange={(checked) => setIncludeLocation(checked === true)}
                 />
                 <MapPin className="h-4 w-4" />
                 <label htmlFor="include-location" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
@@ -163,7 +163,7 @@ const BlogGenerator = ({ weatherData, locationData, selectedPhotos = [] }: BlogG
                 <Checkbox 
                   id="include-news"
                   checked={includeNews}
-                  onCheckedChange={setIncludeNews}
+                  onCheckedChange={(checked) => setIncludeNews(checked === true)}
                 />
                 <Newspaper className="h-4 w-4" />
                 <label htmlFor="include-news" className="text-sm leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
