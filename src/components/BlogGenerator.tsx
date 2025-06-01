@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -360,6 +358,35 @@ const BlogGenerator = ({ weatherData, locationData: propLocationData, selectedPh
             </div>
           </CardHeader>
           <CardContent>
+            {/* Weather and Location Info above title */}
+            {(weatherData || locationData) && (
+              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+                {weatherData?.current && (
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className="text-2xl">{weatherData.current.conditions?.toLowerCase().includes('sun') || weatherData.current.conditions?.toLowerCase().includes('clear') ? '☀️' : 
+                                                 weatherData.current.conditions?.toLowerCase().includes('cloud') ? '⛅' : 
+                                                 weatherData.current.conditions?.toLowerCase().includes('rain') ? '🌧️' : 
+                                                 weatherData.current.conditions?.toLowerCase().includes('snow') ? '❄️' : '🌤️'}</span>
+                    <div>
+                      <div className="text-lg font-medium">{weatherData.current.temperature}°C</div>
+                      <div className="text-sm text-gray-600">{weatherData.current.conditions}</div>
+                      {weatherData.current.feelsLike && (
+                        <div className="text-sm text-gray-500">Feels like {weatherData.current.feelsLike}°C</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {locationData && (
+                  <div className="flex items-center space-x-2">
+                    <MapPin className="h-4 w-4 text-gray-500" />
+                    <span className="text-sm text-gray-600">
+                      {locationData.name || locationData.city || locationData.address || `${locationData.latitude?.toFixed(2)}, ${locationData.longitude?.toFixed(2)}`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <style>
               {`
                 .blog-content h1 {
@@ -416,4 +443,3 @@ const BlogGenerator = ({ weatherData, locationData: propLocationData, selectedPh
 };
 
 export default BlogGenerator;
-

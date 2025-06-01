@@ -184,16 +184,15 @@ OUTPUT FORMAT:
 - DO NOT wrap the output in \`\`\`html or any other markdown formatting
 
 TITLE FORMAT:
-- Include the formatted date and location in the title
-- Format: [European Date] - [Story Title], [Location] [Weather Emoji]
-- Example: "Sunday 1st June, 2025 - A Wonderful Day, Roetgen ☀️"`;
+- Include ONLY the formatted date and story title
+- Format: [European Date] - [Story Title]
+- Example: "Sunday 1st June, 2025 - A Wonderful Day"
+- DO NOT include location or weather emoji in the title`;
 
     // Build the user prompt with comprehensive context
     const europeanDate = formatEuropeanDate();
-    const weatherEmoji = getWeatherEmoji(weatherData);
-    const titleLocation = formatLocationForTitle(locationData);
     
-    console.log('Title location formatted:', titleLocation);
+    console.log('Title date formatted:', europeanDate);
 
     let userPrompt = `Transform these rough notes into an engaging personal blog story for ${europeanDate}:
 
@@ -202,9 +201,8 @@ ROUGH NOTES TO TRANSFORM:
 
 TITLE REQUIREMENTS:
 - Start the title with: "${europeanDate}"
-- Add location if available: "${titleLocation || 'your location'}"
-- Add weather emoji: "${weatherEmoji}"
-- Example format: "${europeanDate} - [Your Story Title]${titleLocation ? ', ' + titleLocation : ''} ${weatherEmoji}"
+- Format: "${europeanDate} - [Your Story Title]"
+- DO NOT include location or weather information in the title
 
 CRITICAL INSTRUCTIONS: 
 - These are rough, disconnected notes. Transform them into a beautiful, flowing personal story
@@ -218,7 +216,8 @@ CRITICAL INSTRUCTIONS:
 `;
 
     // Add REAL location context with more detail
-    if (locationData && titleLocation) {
+    if (locationData) {
+      const titleLocation = formatLocationForTitle(locationData);
       userPrompt += `REAL LOCATION CONTEXT:
 Location: ${titleLocation}
 ${locationData.country ? `Country: ${locationData.country}` : ''}
